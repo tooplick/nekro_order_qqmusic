@@ -124,7 +124,6 @@ async def send_message(bot, chat_type: str, target_id: int, message) -> bool:
     description="搜索 QQ 音乐并发送歌曲信息、专辑封面和语音消息"
 )
 async def send_music(
-        _ctx: AgentCtx,
         chat_key: str,
         keyword: str
 ) -> str:
@@ -132,7 +131,6 @@ async def send_music(
     搜索 QQ 音乐歌曲并发送给用户（文字+封面+语音）
 
     Args:
-        _ctx (AgentCtx): 插件调用上下文
         chat_key (str): 会话标识，例如 "adapter-priv_123456" 或 "adapter-group_123456"
         keyword (str): 搜索关键词（歌曲名或歌手名）
 
