@@ -16,11 +16,11 @@ from pydantic import Field
 
 plugin = NekroPlugin(
     name="QQ音乐点歌",
-    module_name="order_qqmusic",
+    module_name="qqmusic_order",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
     version="2.0.1",
     author="GeQian",
-    url="https://github.com/tooplick/nekro_order_qqmusic",
+    url="",
 )
 
 @plugin.mount_config()
@@ -87,7 +87,7 @@ async def get_song_url(song_info: dict, credential: Credential) -> str:
         print(f"MP3_128格式获取失败: {e}")
         raise ValueError(f"无法获取歌曲下载链接: {e}")
 
-def get_cover(mid: str, size: int = 300) -> str: 
+def get_cover(mid: str, size: int = 300) -> str:  # 修改：默认尺寸改为300
     """获取专辑封面链接"""
     if size not in [150, 300, 500, 800]:
         raise ValueError("不支持的封面尺寸")
