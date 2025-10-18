@@ -18,7 +18,7 @@ plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.0.1",
+    version="2.0.2",
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
@@ -33,6 +33,15 @@ class QQMusicPluginConfig(ConfigBase):
         description="选择发送专辑封面的图片尺寸（像素）",
         json_schema_extra={
             "description": "支持150x150、300x300、500x500、800x800四种尺寸"
+        }
+    )
+    
+    preferred_quality: Literal["FLAC", "MP3_320", "MP3_128"] = Field(
+        default="MP3_320",
+        title="优先音质",
+        description="选择歌曲播放的优先音质，如果无法获取将自动降级",
+        json_schema_extra={
+            "description": "FLAC为无损音质，MP3_320为高品质，MP3_128为标准品质"
         }
     )
 
@@ -60,31 +69,47 @@ async def load_credential() -> Credential | None:
         print(f"加载QQ音乐凭证失败: {e}")
         return None
 
-async def get_song_url(song_info: dict, credential: Credential) -> str:
-    """获取歌曲下载链接，优先使用MP3_320，失败则降级到MP3_128"""
+def get_quality_priority(preferred_quality: str) -> list[SongFileType]:
+    """根据优先音质返回音质优先级列表"""
+    quality_map = {
+        "FLAC": [SongFileType.FLAC, SongFileType.MP3_320, SongFileType.MP3_128],
+        "MP3_320": [SongFileType.MP3_320, SongFileType.MP3_128],
+        "MP3_128": [SongFileType.MP3_128]
+    }
+    return quality_map.get(preferred_quality, [SongFileType.MP3_320, SongFileType.MP3_128])
+
+async def get_song_url(song_info: dict, credential: Credential, preferred_quality: str) -> str:
+    """根据优先音质获取歌曲下载链接，失败时自动降级"""
     mid = song_info['mid']
-
-    # 先尝试MP3_320格式
-    file_type = SongFileType.MP3_320
-    try:
-        urls = await get_song_urls([mid], file_type=file_type, credential=credential)
-        url = urls[mid] if isinstance(urls[mid], str) else urls[mid][0]
-        if url:
-            print(f"使用高品质音频 (MP3_320)")
-            return url
-    except Exception as e:
-        print(f"MP3_320格式获取失败: {e}")
-
-    # 降级到MP3_128格式
-    print("降级到标准品质音频 (MP3_128)")
-    file_type = SongFileType.MP3_128
-    try:
-        urls = await get_song_urls([mid], file_type=file_type, credential=credential)
-        url = urls[mid] if isinstance(urls[mid], str) else urls[mid][0]
-        return url
-    except Exception as e:
-        print(f"MP3_128格式获取失败: {e}")
-        raise ValueError(f"无法获取歌曲下载链接: {e}")
+    
+    # 获取音质优先级列表
+    quality_priority = get_quality_priority(preferred_quality)
+    
+    quality_names = {
+        SongFileType.FLAC: "FLAC无损",
+        SongFileType.MP3_320: "MP3高品质",
+        SongFileType.MP3_128: "MP3标准"
+    }
+    
+    last_exception = None
+    
+    # 按照优先级尝试不同音质
+    for file_type in quality_priority:
+        try:
+            urls = await get_song_urls([mid], file_type=file_type, credential=credential)
+            url = urls[mid] if isinstance(urls[mid], str) else urls[mid][0]
+            if url:
+                quality_name = quality_names.get(file_type, str(file_type))
+                print(f"使用{quality_name}音质")
+                return url
+        except Exception as e:
+            last_exception = e
+            quality_name = quality_names.get(file_type, str(file_type))
+            print(f"{quality_name}音质获取失败: {e}")
+            continue
+    
+    # 所有音质都失败
+    raise ValueError(f"无法获取歌曲下载链接，所有音质尝试均失败。最后错误: {last_exception}")
 
 def get_cover(mid: str, size: int = 300) -> str:  # 修改：默认尺寸改为300
     """获取专辑封面链接"""
@@ -162,8 +187,8 @@ async def send_music(
         # 获取专辑封面
         cover_url = get_cover(first_song["album"]["mid"], size=cover_size)
         
-        # 获取播放链接
-        music_url = await get_song_url(first_song, credential)
+        # 获取播放链接（使用配置的优先音质）
+        music_url = await get_song_url(first_song, credential, config.preferred_quality)
 
         # 解析 chat_key
         chat_type, target_id = parse_chat_key(chat_key)
