@@ -16,7 +16,7 @@ from pydantic import Field
 
 plugin = NekroPlugin(
     name="QQ音乐点歌",
-    module_name="qqmusic_order",
+    module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
     version="2.0.1",
     author="GeQian",
