@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "order_qqmusic"
-version = "1.0.0-dev"
+version = "2.0.2-dev"
 description = "QQ音乐点歌"
 authors = ["搁浅"]
 readme = "README.md"
