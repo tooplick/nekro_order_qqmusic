@@ -179,7 +179,7 @@ async def send_music(
         first_song = result[0]
         mid = first_song["mid"]
         singer = first_song["singer"][0]["name"]
-        title = first_song["name"]
+        title = first_song["title"]
 
         # 使用模块级配置获取封面尺寸，并转换为整数
         cover_size = int(config.cover_size)
