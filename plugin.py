@@ -28,7 +28,7 @@ class QQMusicPluginConfig(ConfigBase):
     """QQ音乐插件配置项"""
     
     cover_size: Literal["150", "300", "500", "800"] = Field(
-        default="300",  # 修改：默认尺寸改为300
+        default="300", 
         title="专辑封面尺寸",
         description="选择发送专辑封面的图片尺寸（像素）",
         json_schema_extra={
@@ -36,7 +36,6 @@ class QQMusicPluginConfig(ConfigBase):
         }
     )
 
-# 使用高德天气插件的方式获取配置
 config: QQMusicPluginConfig = plugin.get_config(QQMusicPluginConfig)
 
 async def load_credential() -> Credential | None:
@@ -132,7 +131,7 @@ async def send_music(
     搜索 QQ 音乐歌曲并发送给用户（文字+封面+语音）
 
     Args:
-        _ctx (AgentCtx): 插件调用上下文，此插件不用传入
+        _ctx (AgentCtx): 插件调用上下文
         chat_key (str): 会话标识，例如 "adapter-priv_123456" 或 "adapter-group_123456"
         keyword (str): 搜索关键词（歌曲名或歌手名）
 
