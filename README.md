@@ -1,6 +1,6 @@
 # QQ音乐点歌插件
 
-一个基于 Nekro 框架的 QQ 音乐点歌插件，允许 AI 助手通过 QQ 音乐搜索并发送音乐消息。
+一个基于 Nekro Agent 框架的 QQ 音乐点歌插件，允许 AI 助手通过 QQ 音乐搜索并发送音乐消息。
 
 ## 功能特点
 
@@ -18,7 +18,7 @@
 - 凭证文件"qqmusic_cred.pkl"
 - 请放入插件的配置文件夹:
 - /nekro_agent/plugin_data/GeQian.order_qqmusic/qqmusic_cred.pkl
-- 使用VIP账号生成凭证！
+- 请使用VIP账号生成凭证！
 
 ### AI 助手调用
 
