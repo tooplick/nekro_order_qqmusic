@@ -1,6 +1,6 @@
 # QQ音乐点歌插件
 
-一个基于 Nekro 框架的 QQ 音乐点歌插件，允许 AI 助手通过 QQ 音乐搜索并发送音乐消息。
+一个基于 Nekro agent 框架的 QQ 音乐点歌插件，允许 AI 助手通过 QQ 音乐搜索并发送音乐消息。
 
 ## 功能特点
 
@@ -24,7 +24,7 @@ AI 助手可以通过调用 `send_music` 方法来发送音乐：
 
 ```python
 # 在 AI 助手的对话中使用
-send_music("adapter-group_123456", "周杰伦 晴天")
+/exec send_music("adapter-group_123456", "周杰伦 晴天")
 ```
 
 ## 凭证配置
@@ -32,7 +32,7 @@ send_music("adapter-group_123456", "周杰伦 晴天")
 要获取高品质音频（VIP歌曲），需要配置 QQ 音乐凭证：
 
 1. 在插件数据目录中创建 `qqmusic_cred.pkl` 文件
-2. 将有效的 QQ 音乐登录凭证保存到该文件中
+2. 将有效的 QQ 音乐登录凭证保存到配置文件夹
 
 
 ## 技术细节
