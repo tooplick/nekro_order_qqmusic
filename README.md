@@ -16,7 +16,8 @@
 - 所以需要从外部环境生成
 - 生成工具见Releases
 - 凭证文件"qqmusic_cred.pkl"
-- 请放入插件的配置文件夹
+- 请放入插件的配置文件夹:
+- /nekro_agent/plugin_data/GeQian.order_qqmusic/qqmusic_cred.pkl
 - 使用VIP账号生成凭证！
 
 ### AI 助手调用
