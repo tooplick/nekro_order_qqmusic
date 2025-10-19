@@ -18,6 +18,8 @@ const refreshBtn      = document.getElementById('refreshBtn');
 const refreshResult   = document.getElementById('refreshResult');
 const infoBtn         = document.getElementById('infoBtn');
 const infoResult      = document.getElementById('infoResult');
+const deleteBtn       = document.getElementById('deleteBtn');
+const deleteResult    = document.getElementById('deleteResult');
 
 // 3. 事件绑定
 qqLoginBtn.addEventListener('click', () => generateQRCode('qq'));
@@ -25,6 +27,7 @@ wxLoginBtn.addEventListener('click', () => generateQRCode('wx'));
 checkStatusBtn.addEventListener('click', checkCredentialStatus);
 refreshBtn.addEventListener('click', refreshCredential);
 infoBtn.addEventListener('click', getCredentialInfo);
+deleteBtn.addEventListener('click', deleteCredential);
 
 // 4. 生成二维码
 async function generateQRCode(type) {
@@ -155,7 +158,37 @@ async function getCredentialInfo() {
     }
 }
 
-// 8. 工具函数
+// 8. 删除凭证
+async function deleteCredential() {
+    if (!confirm('确定要删除凭证吗？此操作不可恢复，删除后需要重新登录！')) {
+        return;
+    }
+    
+    try {
+        showLoading(deleteResult);
+        deleteBtn.disabled = true;
+
+        const response = await fetch(`${BASE_URL}/credential`, { method: 'DELETE' });
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        showResult(deleteResult, data.message || '凭证删除成功', 'success');
+        
+        // 删除成功后，清空其他相关显示
+        setTimeout(() => {
+            statusResult.innerHTML = '';
+            infoResult.innerHTML = '';
+        }, 1000);
+    } catch (error) {
+        showResult(deleteResult, `删除凭证失败: ${error.message}`, 'error');
+    } finally {
+        deleteBtn.disabled = false;
+    }
+}
+
+// 9. 工具函数
 function showLoading(el) { 
     el.innerHTML = '<div class="loading-spinner"></div>加载中...'; 
     el.className = 'result loading'; 
