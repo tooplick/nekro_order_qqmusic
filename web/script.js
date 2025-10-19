@@ -5,12 +5,12 @@ const BASE_URL = `http://${hostFromUrl}:8021/plugins/GeQian.order_qqmusic`;
 
 console.log('自动生成的 BASE_URL:', BASE_URL);
 
-
-// 3. DOM 元素缓存
+// 2. DOM 元素缓存
 const qqLoginBtn      = document.getElementById('qqLoginBtn');
 const wxLoginBtn      = document.getElementById('wxLoginBtn');
 const qrcodeContainer = document.getElementById('qrcodeContainer');
 const qrcodeImage     = document.getElementById('qrcodeImage');
+const qrcodePlaceholder = document.getElementById('qrcodePlaceholder');
 const qrcodeStatus    = document.getElementById('qrcodeStatus');
 const checkStatusBtn  = document.getElementById('checkStatusBtn');
 const statusResult    = document.getElementById('statusResult');
@@ -19,26 +19,50 @@ const refreshResult   = document.getElementById('refreshResult');
 const infoBtn         = document.getElementById('infoBtn');
 const infoResult      = document.getElementById('infoResult');
 
-// 4. 事件绑定
+// 3. 事件绑定
 qqLoginBtn.addEventListener('click', () => generateQRCode('qq'));
 wxLoginBtn.addEventListener('click', () => generateQRCode('wx'));
 checkStatusBtn.addEventListener('click', checkCredentialStatus);
 refreshBtn.addEventListener('click', refreshCredential);
 infoBtn.addEventListener('click', getCredentialInfo);
 
-// 5. 生成二维码
+// 4. 生成二维码
 async function generateQRCode(type) {
     try {
         showLoading(qrcodeStatus);
-        qrcodeContainer.style.display = 'block';
+        qrcodeContainer.classList.add('active');
+        
+        // 隐藏占位符，显示加载状态
+        qrcodePlaceholder.innerHTML = '<div class="loading-spinner"></div>生成二维码中...';
+        qrcodeImage.style.display = 'none';
+        qrcodePlaceholder.style.display = 'flex';
+        qrcodePlaceholder.style.flexDirection = 'column';
 
         const response = await fetch(`${BASE_URL}/get_qrcode/${type}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         let qrBase64 = await response.text();
         qrBase64     = qrBase64.trim().replace(/^["']|["']$/g, ''); // 去引号/空格
+        
+        // 设置二维码图片
+        qrcodeImage.onload = () => {
+            // 图片加载成功后隐藏占位符，显示二维码
+            qrcodePlaceholder.style.display = 'none';
+            qrcodeImage.style.display = 'block';
+        };
+        
+        qrcodeImage.onerror = () => {
+            // 图片加载失败时显示错误占位符
+            qrcodePlaceholder.innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>二维码加载失败</p>';
+            qrcodePlaceholder.style.display = 'flex';
+            qrcodeImage.style.display = 'none';
+            qrcodeStatus.textContent = '二维码加载失败，请重试';
+            qrcodeStatus.className = 'qrcode-status error';
+        };
+        
         qrcodeImage.src = `data:image/png;base64,${qrBase64}`;
         qrcodeStatus.textContent = '请使用手机扫描二维码登录';
+        qrcodeStatus.className = 'qrcode-status';
 
         const checkInterval = setInterval(async () => {
             try {
@@ -48,7 +72,7 @@ async function generateQRCode(type) {
                     if (data.valid) {
                         clearInterval(checkInterval);
                         qrcodeStatus.textContent = '登录成功！凭证已保存。';
-                        qrcodeStatus.className   = 'success';
+                        qrcodeStatus.classList.add('success');
                     }
                 }
             } catch (e) {
@@ -57,12 +81,15 @@ async function generateQRCode(type) {
         }, 3000);
     } catch (error) {
         console.error('生成二维码失败:', error);
+        qrcodePlaceholder.innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>二维码生成失败</p>';
+        qrcodePlaceholder.style.display = 'flex';
+        qrcodeImage.style.display = 'none';
         qrcodeStatus.textContent = `生成二维码失败: ${error.message}`;
-        qrcodeStatus.className   = 'error';
+        qrcodeStatus.classList.add('error');
     }
 }
 
-// 6. 检查凭证状态
+// 5. 检查凭证状态
 async function checkCredentialStatus() {
     try {
         showLoading(statusResult);
@@ -78,7 +105,7 @@ async function checkCredentialStatus() {
     }
 }
 
-// 7. 刷新凭证
+// 6. 刷新凭证
 async function refreshCredential() {
     try {
         showLoading(refreshResult);
@@ -98,7 +125,7 @@ async function refreshCredential() {
     }
 }
 
-// 8. 获取凭证信息
+// 7. 获取凭证信息
 async function getCredentialInfo() {
     try {
         showLoading(infoResult);
@@ -109,14 +136,32 @@ async function getCredentialInfo() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        let infoText = '<strong>凭证信息：</strong><br>';
-        for (const [k, v] of Object.entries(data)) infoText += `<strong>${k}:</strong> ${v}<br>`;
-        showResult(infoResult, infoText, 'info');
+        
+        // 创建格式化的凭证信息展示
+        let infoHTML = '<div class="credential-info">';
+        for (const [key, value] of Object.entries(data)) {
+            infoHTML += `
+                <div class="info-item">
+                    <div class="info-label">${key}</div>
+                    <div class="info-value">${value}</div>
+                </div>
+            `;
+        }
+        infoHTML += '</div>';
+        
+        showResult(infoResult, infoHTML, 'info');
     } catch (error) {
         showResult(infoResult, `获取凭证信息失败: ${error.message}`, 'error');
     }
 }
 
-// 9. 工具函数
-function showLoading(el) { el.innerHTML = '加载中...'; el.className = 'result'; }
-function showResult(el, msg, type) { el.innerHTML = msg; el.className = `result ${type}`; }
+// 8. 工具函数
+function showLoading(el) { 
+    el.innerHTML = '<div class="loading-spinner"></div>加载中...'; 
+    el.className = 'result loading'; 
+}
+
+function showResult(el, msg, type) { 
+    el.innerHTML = msg; 
+    el.className = `result ${type}`; 
+}
