@@ -290,28 +290,39 @@ h2::before {
     to { transform: rotate(360deg); }
 }
 
+/* 更新凭证信息显示样式 */
 .credential-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
+    display: block; /* 改为块状布局 */
     margin-top: 10px;
 }
 
 .info-item {
-    padding: 10px;
+    padding: 12px 15px;
     background: rgba(0, 0, 0, 0.03);
     border-radius: 6px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: var(--transition);
+}
+
+.info-item:hover {
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .info-label {
     font-weight: 600;
     color: var(--text-light);
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    min-width: 120px;
 }
 
 .info-value {
-    margin-top: 5px;
     word-break: break-all;
+    text-align: right;
+    flex: 1;
+    margin-left: 15px;
 }
 
 footer {
@@ -322,6 +333,7 @@ footer {
     border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+/* 响应式调整 */
 @media (max-width: 768px) {
     .container {
         border-radius: 0;
@@ -341,5 +353,16 @@ footer {
     
     header h1 {
         font-size: 1.8rem;
+    }
+    
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .info-value {
+        text-align: left;
+        margin-left: 0;
+        margin-top: 5px;
     }
 }

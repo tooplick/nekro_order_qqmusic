@@ -137,7 +137,7 @@ async function getCredentialInfo() {
         }
         const data = await response.json();
         
-        // 创建格式化的凭证信息展示
+        // 创建一行一行显示的凭证信息
         let infoHTML = '<div class="credential-info">';
         for (const [key, value] of Object.entries(data)) {
             infoHTML += `
