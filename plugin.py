@@ -158,7 +158,7 @@ async def send_music(
     Args:
         _ctx (AgentCtx): 插件调用上下文
         chat_key (str): 会话标识，例如 "adapter-priv_123456" 或 "adapter-group_123456"
-        keyword (str): 搜索关键词（歌曲名或歌手名）
+        keyword (str): 搜索关键词：歌曲名 歌手名
 
     Returns:
         str: 发送结果提示信息，例如 "歌曲《xxx》已发送"
