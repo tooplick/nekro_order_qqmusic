@@ -18,7 +18,7 @@ plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.0.2",
+    version="2.0.3",
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
