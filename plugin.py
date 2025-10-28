@@ -11,7 +11,7 @@ from qqmusic_api.song import get_song_urls, SongFileType
 from qqmusic_api.login import Credential
 from nonebot import get_bot
 from nonebot.adapters.onebot.v11 import MessageSegment, ActionFailed
-from typing import Any, Literal
+from typing import Literal
 from pydantic import Field
 
 plugin = NekroPlugin(
