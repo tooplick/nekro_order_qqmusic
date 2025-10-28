@@ -6,7 +6,7 @@ from nekro_agent.services.plugin.packages import dynamic_import_pkg
 qqmusic_api = dynamic_import_pkg("qqmusic-api-python", "qqmusic_api")
 from nekro_agent.api.plugin import NekroPlugin, SandboxMethodType, ConfigBase
 from nekro_agent.api.schemas import AgentCtx
-from qqmusic_api import search, song
+from qqmusic_api import search
 from qqmusic_api.song import get_song_urls, SongFileType
 from qqmusic_api.login import Credential
 from nonebot import get_bot
