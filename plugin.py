@@ -122,7 +122,7 @@ def parse_chat_key(chat_key: str) -> tuple[str, int]:
     if "_" not in chat_key:
         raise ValueError(f"无效的 chat_key: {chat_key}")
     
-    adapter_id, old_chat_key = chat_key.split("-", 1)
+    old_chat_key = chat_key.split("-", 1)
     chat_type, target_id = old_chat_key.split("_", 1)
     
     if not target_id.isdigit() or chat_type not in ("private", "group"):
