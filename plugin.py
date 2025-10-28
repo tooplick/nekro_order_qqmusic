@@ -18,7 +18,7 @@ plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.0.3",
+    version="2.0.4",
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
@@ -26,11 +26,11 @@ plugin = NekroPlugin(
 @plugin.mount_config()
 class QQMusicPluginConfig(ConfigBase):
     """QQ音乐插件配置项"""
-    
-    cover_size: Literal["150", "300", "500", "800"] = Field(
-        default="300", 
+
+    cover_size: Literal["0", "150", "300", "500", "800"] = Field(
+        default="500",
         title="专辑封面尺寸",
-        description="选择发送专辑封面的图片尺寸（像素）",
+        description="选择专辑封面尺寸,0表示不发送封面",
         json_schema_extra={
             "description": "支持150x150、300x300、500x500、800x800四种尺寸"
         }
@@ -111,10 +111,12 @@ async def get_song_url(song_info: dict, credential: Credential, preferred_qualit
     # 所有音质都失败
     raise ValueError(f"无法获取歌曲下载链接，所有音质尝试均失败。最后错误: {last_exception}")
 
-def get_cover(mid: str, size: int = 300) -> str:  # 修改：默认尺寸改为300
+def get_cover(mid: str, size: int = 300) -> str | None:
     """获取专辑封面链接"""
+    if size == 0:
+        return None  # 尺寸为0时不发送封面
     if size not in [150, 300, 500, 800]:
-        raise ValueError("不支持的封面尺寸")
+        raise ValueError("封面尺寸必须是150、300、500或800")
     return f"https://y.gtimg.cn/music/photo_new/T002R{size}x{size}M000{mid}.jpg"
 
 def parse_chat_key(chat_key: str) -> tuple[str, int]:
@@ -199,9 +201,10 @@ async def send_music(
             return "发送文字消息失败"
 
         # 发送专辑封面
-        cover_msg = MessageSegment.image(cover_url)
-        if not await send_message(bot, chat_type, target_id, cover_msg):
-            return "发送专辑封面失败"
+        if cover_url:
+            cover_msg = MessageSegment.image(cover_url)
+            if not await send_message(bot, chat_type, target_id, cover_msg):
+                return "发送专辑封面失败"
 
         # 发送语音消息
         voice_msg = MessageSegment.record(file=music_url)

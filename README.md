@@ -40,7 +40,7 @@ AI 助手可以通过调用 `send_music` 方法来发送音乐：
 
 ```python
 # 手动使用
-/exec send_music("adapter-group_123456", "周杰伦 晴天")
+/exec send_music("onebot_v11-private_12345678", "晴天")
 ```
 
 ## 技术细节
@@ -51,6 +51,8 @@ AI 助手可以通过调用 `send_music` 方法来发送音乐：
 - 提供Web界面用于凭证管理
 
 ## 版本历史
+- v2.0.4：优化设置
+  - 新增封面开关
 - v2.0.3：更加人性化
   - 添加Web界面用于凭证管理
 - v2.0.2：第一次更新
