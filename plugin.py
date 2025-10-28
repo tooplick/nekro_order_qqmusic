@@ -6,12 +6,12 @@ from nekro_agent.services.plugin.packages import dynamic_import_pkg
 qqmusic_api = dynamic_import_pkg("qqmusic-api-python", "qqmusic_api")
 from nekro_agent.api.plugin import NekroPlugin, SandboxMethodType, ConfigBase
 from nekro_agent.api.schemas import AgentCtx
-from qqmusic_api import search
+from qqmusic_api import search, song
 from qqmusic_api.song import get_song_urls, SongFileType
 from qqmusic_api.login import Credential
 from nonebot import get_bot
 from nonebot.adapters.onebot.v11 import MessageSegment, ActionFailed
-from typing import Literal
+from typing import Any, Literal
 from pydantic import Field
 
 plugin = NekroPlugin(
@@ -122,7 +122,7 @@ def parse_chat_key(chat_key: str) -> tuple[str, int]:
     if "_" not in chat_key:
         raise ValueError(f"无效的 chat_key: {chat_key}")
     
-    old_chat_key = chat_key.split("-", 1)
+    adapter_id, old_chat_key = chat_key.split("-", 1)
     chat_type, target_id = old_chat_key.split("_", 1)
     
     if not target_id.isdigit() or chat_type not in ("private", "group"):
@@ -157,7 +157,7 @@ async def send_music(
 
     Args:
         _ctx (AgentCtx): 插件调用上下文
-        chat_key (str): 会话标识，例如 "onebot_v11-private_12345678" 或 "onebot_v11-group_12345678"
+        chat_key (str): 会话标识，例如"onebot_v11-private_12345678" 或 "onebot_v11-group_12345678"
         keyword (str): 搜索关键词：歌曲名 歌手名
 
     Returns:
