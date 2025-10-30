@@ -1,7 +1,7 @@
 // 1. 从地址栏取 IP，没带参数就默认 localhost
 const urlParams = new URLSearchParams(window.location.search);
-const hostFromUrl = urlParams.get('ip') || window.location.hostname || 'localhost';
-const BASE_URL = `http://${hostFromUrl}:8021/plugins/GeQian.order_qqmusic`;
+const hostFromUrl = urlParams.get('ip') || window.location.host || 'localhost';
+const BASE_URL = `http://${hostFromUrl}/plugins/GeQian.order_qqmusic`;
 
 console.log('自动生成的 BASE_URL:', BASE_URL);
 
