@@ -14,7 +14,7 @@
 
 ### 方法一：使用Web界面（推荐）
 插件提供了一个Web界面用于生成和管理QQ音乐凭证：
-- 启动插件后，访问 http://<服务器IP>:8021/plugins/GeQian.order_qqmusic
+- 启动插件后，访问 http://<服务器ip:NA端口>/plugins/GeQian.order_qqmusic
 - 点击"QQ登录"或"微信登录"按钮
 - 使用手机扫描二维码完成登录
 - 凭证将自动保存
