@@ -34,9 +34,9 @@
 - `POST /api/credential/refresh` - 刷新凭证
 - `GET /api/credential/info` - 获取凭证信息
 
-### AI 助手调用
+### Bot 调用
 
-AI 助手可以通过调用 `send_music` 方法来发送音乐：
+Bot 可以通过调用 `send_music` 方法来发送音乐：
 
 ```python
 # 手动使用
