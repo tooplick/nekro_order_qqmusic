@@ -158,7 +158,6 @@ async def send_music(
     搜索 QQ 音乐歌曲并发送给用户（文字+封面+语音）
 
     Args:
-        _ctx (AgentCtx): 插件调用上下文
         chat_key (str): 会话标识，例如"onebot_v11-private_12345678" 或 "onebot_v11-group_12345678"
         keyword (str): 搜索关键词：歌曲名 歌手名
 
