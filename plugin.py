@@ -78,8 +78,7 @@ async def load_and_refresh_credential() -> Credential | None:
             
             # 检查自动刷新配置
             if not config.auto_refresh_credential:
-                print("自动刷新凭证功能已关闭,无法刷新过期凭证")
-                return None
+                return "自动刷新凭证功能已关闭,无法刷新过期凭证"
             
             print("尝试自动刷新...")
             
@@ -95,10 +94,10 @@ async def load_and_refresh_credential() -> Credential | None:
                     return cred
                 except Exception as refresh_error:
                     print(f"QQ音乐凭证自动刷新失败: {refresh_error}")
-                    return None
+                    return "QQ音乐凭证自动刷新失败"
             else:
                 print("QQ音乐凭证不支持刷新")
-                return None
+                return "QQ音乐凭证不支持刷新"
         else:
             print("QQ音乐凭证加载成功")
             return cred
