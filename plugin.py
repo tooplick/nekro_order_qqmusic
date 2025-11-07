@@ -90,22 +90,21 @@ async def load_and_refresh_credential() -> Credential | None:
                     # 保存刷新后的凭证
                     async with aiofiles.open(credential_file, "wb") as f:
                         await f.write(pickle.dumps(cred))
-                    print("QQ音乐凭证自动刷新成功!")
+                    # print("QQ音乐凭证自动刷新成功!")
                     return cred
                 except Exception as refresh_error:
-                    print(f"QQ音乐凭证自动刷新失败: {refresh_error}")
+                    # print(f"QQ音乐凭证自动刷新失败: {refresh_error}")
                     return f"QQ音乐凭证自动刷新失败: {refresh_error}"
             else:
-                print("QQ音乐凭证不支持刷新")
+                # print("QQ音乐凭证不支持刷新")
                 return f"QQ音乐凭证不支持刷新"
         else:
             print("QQ音乐凭证加载成功")
             return cred
             
     except Exception as e:
-        print(f"加载QQ音乐凭证失败: {e}")
-        return None
-
+        # print(f"加载QQ音乐凭证失败: {e}")
+        return f"加载QQ音乐凭证失败"
 def get_quality_priority(preferred_quality: str) -> list[SongFileType]:
     """根据优先音质返回音质优先级列表"""
     quality_map = {
@@ -208,14 +207,14 @@ async def send_music(
         credential = await load_and_refresh_credential()
         if not credential:
             if config.auto_refresh_credential:
-                return "QQ音乐凭证不存在或已过期且无法刷新，无法播放歌曲"
+                return f"QQ音乐凭证不存在或已过期且无法刷新，无法播放歌曲"
             else:
-                return "QQ音乐凭证已过期，自动刷新功能已关闭，无法播放VIP歌曲"
+                return f"QQ音乐凭证已过期，自动刷新功能已关闭，无法播放VIP歌曲"
 
         # 搜索歌曲
         result = await search.search_by_type(keyword=keyword, num=1)
         if not result:
-            return "未找到相关歌曲"
+            return f"未找到相关歌曲"
         
         first_song = result[0]
         mid = first_song["mid"]
@@ -253,7 +252,7 @@ async def send_music(
         return f"歌曲《{title}》已发送"
 
     except Exception as e:
-        print(f"发送音乐消息时发生错误: {e}")
+        # print(f"发送音乐消息时发生错误: {e}")
         return f"发送音乐消息失败: {e}"
 
 @plugin.mount_cleanup_method()
