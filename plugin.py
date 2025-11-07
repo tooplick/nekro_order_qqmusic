@@ -44,11 +44,17 @@ class QQMusicPluginConfig(ConfigBase):
             "description": "FLAC为无损音质，MP3_320为高品质，MP3_128为标准品质"
         }
     )
+    
+    auto_refresh_credential: bool = Field(
+        default=True,
+        title="自动刷新凭证",
+        description="是否在凭证过期时自动刷新凭证",
+    )
 
 config: QQMusicPluginConfig = plugin.get_config(QQMusicPluginConfig)
 
 async def load_and_refresh_credential() -> Credential | None:
-    """加载本地凭证，如果过期则自动刷新，使用插件持久化目录"""
+    """加载本地凭证，如果过期则根据配置自动刷新，使用插件持久化目录"""
     try:
         plugin_dir = plugin.get_plugin_path()
         credential_file = plugin_dir / "qqmusic_cred.pkl"
@@ -68,7 +74,14 @@ async def load_and_refresh_credential() -> Credential | None:
         is_expired = await check_expired(cred)
         
         if is_expired:
-            print("QQ音乐凭证已过期，尝试自动刷新...")
+            print("QQ音乐凭证已过期")
+            
+            # 检查自动刷新配置
+            if not config.auto_refresh_credential:
+                print("自动刷新凭证功能已关闭,无法刷新过期凭证")
+                return None
+            
+            print("尝试自动刷新...")
             
             # 检查是否可以刷新
             can_refresh = await cred.can_refresh()
@@ -195,7 +208,10 @@ async def send_music(
         # 加载凭证
         credential = await load_and_refresh_credential()
         if not credential:
-            return "QQ音乐凭证不存在或已过期且无法刷新，无法播放歌曲"
+            if config.auto_refresh_credential:
+                return "QQ音乐凭证不存在或已过期且无法刷新，无法播放歌曲"
+            else:
+                return "QQ音乐凭证已过期，自动刷新功能已关闭，无法播放VIP歌曲"
 
         # 搜索歌曲
         result = await search.search_by_type(keyword=keyword, num=1)
