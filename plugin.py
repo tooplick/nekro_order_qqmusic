@@ -182,7 +182,7 @@ async def send_message(bot, chat_type: str, target_id: int, message) -> bool:
         return False
 
 @plugin.mount_sandbox_method(
-    SandboxMethodType.TOOL,
+    SandboxMethodType.AGENT,
     name="send_music",
     description="搜索 QQ 音乐并发送歌曲信息、专辑封面和语音消息"
 )
