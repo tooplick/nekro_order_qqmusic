@@ -17,7 +17,7 @@
 - 点击"QQ登录"或"微信登录"按钮
 - 使用手机扫描二维码完成登录
 - 凭证将自动保存
-- 请使用VIP账号生成凭证！
+- 请使用VIP账号生成凭证!
 ### 方法二：外部工具生成
 - 生成工具见Releases
 - 凭证文件"qqmusic_cred.pkl"
@@ -35,7 +35,7 @@
 
 ### Bot 调用
 
-Bot 可以通过调用 `send_music` 方法来发送音乐：
+Bot 可以通过调用 `send_music` 方法来发送音乐:
 
 ```python
 # 手动使用
@@ -50,26 +50,26 @@ Bot 可以通过调用 `send_music` 方法来发送音乐：
 - 提供Web界面用于凭证管理
 
 ## 版本历史
-- v2.0.5 优化
+- v2.0.5: 优化
   - 新增自动刷新凭证
   - 更改插件为Agent方法
-- v2.0.4：优化设置
+- v2.0.4:优化设置
   - 新增封面开关
-- v2.0.3：更加人性化
+- v2.0.3:更加人性化
   - 添加Web界面用于凭证管理
-- v2.0.2：第一次更新
+- v2.0.2:第一次更新
   - 修复歌曲名称显示问题
   - 添加音质选项：FLAC、MP3_320、MP3_128
-- v2.0.1：初始发布版本
+- v2.0.1:初始发布版本
   - 基础音乐搜索和发送功能
   - 可配置专辑封面尺寸
 
 ## 作者信息
 
-- **作者**：GeQian
-- **GitHub**：[https://github.com/tooplick](https://github.com/tooplick)
+- **作者**:GeQian
+- **GitHub**:[https://github.com/tooplick](https://github.com/tooplick)
 - **Web页面支持**：运阳
-- **GitHub**：[https://github.com/yang208115](https://github.com/yang208115)
+- **GitHub**:[https://github.com/yang208115](https://github.com/yang208115)
 
 ## 许可证
 
