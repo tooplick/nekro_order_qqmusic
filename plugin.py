@@ -61,7 +61,7 @@ async def load_and_refresh_credential() -> Credential | None:
 
         if not credential_file.exists():
             print("QQ音乐凭证文件不存在")
-            return None
+            return f"QQ音乐凭证文件不存在"
 
         # 使用异步文件读取
         async with aiofiles.open(credential_file, "rb") as f:
@@ -78,7 +78,7 @@ async def load_and_refresh_credential() -> Credential | None:
             
             # 检查自动刷新配置
             if not config.auto_refresh_credential:
-                return "自动刷新凭证功能已关闭,无法刷新过期凭证"
+                return f"自动刷新凭证功能已关闭,无法刷新过期凭证"
             
             print("尝试自动刷新...")
             
@@ -94,10 +94,10 @@ async def load_and_refresh_credential() -> Credential | None:
                     return cred
                 except Exception as refresh_error:
                     print(f"QQ音乐凭证自动刷新失败: {refresh_error}")
-                    return "QQ音乐凭证自动刷新失败"
+                    return f"QQ音乐凭证自动刷新失败: {refresh_error}"
             else:
                 print("QQ音乐凭证不支持刷新")
-                return "QQ音乐凭证不支持刷新"
+                return f"QQ音乐凭证不支持刷新"
         else:
             print("QQ音乐凭证加载成功")
             return cred
@@ -179,7 +179,7 @@ async def send_message(bot, chat_type: str, target_id: int, message) -> bool:
         return True
     except ActionFailed as e:
         print(f"发送消息失败: {e}")
-        return False
+        return f"发送消息失败: {e}"
 
 @plugin.mount_sandbox_method(
     SandboxMethodType.AGENT,
