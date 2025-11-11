@@ -71,12 +71,8 @@ Bot 可以通过调用 `send_music` 方法来发送音乐:
 - **Web页面支持**：运阳
 - **GitHub**：[https://github.com/yang208115](https://github.com/yang208115)
 
-## 许可证
-
-本项目采用 MIT 许可证。详见 LICENSE 文件。
-
-## 注意事项
-
-- 请确保遵守 QQ 音乐的使用条款和版权规定
-- 凭证文件需要用户自行获取和配置
-- 插件仅用于学习和交流目的
+## 免责声明
+- 本代码遵循 [GPL-3.0 License](https://github.com/tooplick/qq_music_download/blob/main/LICENSE) 协议，允许**开源/免费使用和引用/修改/衍生代码的开源/免费使用**，不允许**修改和衍生的代码作为闭源的商业软件发布和销售**，禁止**使用本代码盈利**
+- 以此代码为基础的程序**必须**同样遵守 [GPL-3.0 License](https://github.com/tooplick/qq_music_download/blob/main/LICENSE) 协议
+- 本代码仅用于**学习讨论**，禁止**用于盈利**
+- 他人或组织使用本代码进行的任何**违法行为**与作者本人无关
