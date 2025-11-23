@@ -32,7 +32,7 @@ class QQMusicPluginConfig(ConfigBase):
     cover_size: Literal["0", "150", "300", "500", "800"] = Field(
         default="500",
         title="专辑封面尺寸",
-        description="选择发送（文字+封面+语音消息）时的封面尺寸，0表示不发送。"，
+        description="选择发送（文字+封面+语音消息）时的封面尺寸，0表示不发送。",
     )
     
     preferred_quality: Literal["FLAC", "MP3_320", "MP3_128"] = Field(
