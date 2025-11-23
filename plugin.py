@@ -1,7 +1,7 @@
 import pickle
 from pathlib import Path
 import aiofiles
-import aiohttp 
+import httpx 
 from nekro_agent.services.plugin.packages import dynamic_import_pkg
 
 qqmusic_api = dynamic_import_pkg("qqmusic-api-python", "qqmusic_api")
@@ -19,7 +19,7 @@ plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.0.6", 
+    version="2.0.6",
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
@@ -151,19 +151,22 @@ async def get_song_url(song_info: dict, credential: Credential, preferred_qualit
 
 async def check_cover_validity(url: str) -> bool:
     """
-    验证封面图片是否有效（下载检查）
+    验证封面图片是否有效（使用 httpx 下载检查）
     """
     if not url:
         return False
     try:
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
-            async with session.get(url) as resp:
-                if resp.status == 200:
-                    content = await resp.read()
-                    # 简单检查大小和魔数
-                    if len(content) > 1024:
-                        if content.startswith(b'\xff\xd8') or content.startswith(b'\x89PNG'):
-                            return True
+        # 使用 httpx 替代 aiohttp，设置5秒超时
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            # follow_redirects=True 确保如果CDN有跳转也能正确处理
+            resp = await client.get(url, follow_redirects=True)
+            
+            if resp.status_code == 200:
+                content = resp.content
+                # 简单检查大小和魔数
+                if len(content) > 1024:
+                    if content.startswith(b'\xff\xd8') or content.startswith(b'\x89PNG'):
+                        return True
     except Exception as e:
         print(f"封面验证失败: {e}, URL: {url}")
     return False
@@ -228,7 +231,6 @@ async def get_valid_cover_url(song_data: dict, size: int = 300) -> Optional[str]
     print("无法获取任何有效的封面")
     return None
 
-# --- 封面处理逻辑结束 ---
 
 def parse_chat_key(chat_key: str) -> tuple[str, int]:
     """解析chat_key，返回聊天类型和目标ID"""
