@@ -277,7 +277,16 @@ async def send_music(
         chat_key: str,
         keyword: str
 ) -> str:
-    """搜索并发送音乐"""
+    """
+    搜索 QQ 音乐歌曲并发送给用户（文字+封面+语音）或音乐卡片
+
+    Args:
+        chat_key (str): 会话标识，例如"onebot_v11-private_12345678" 或 "onebot_v11-group_12345678"
+        keyword (str): 搜索关键词：歌曲名 歌手名
+
+    Returns:
+        str: 发送结果提示信息，例如 "歌曲《xxx》已发送"
+    """
     try:
         bot = get_bot()
 
