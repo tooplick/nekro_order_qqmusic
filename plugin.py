@@ -156,7 +156,7 @@ async def check_cover_validity(url: str) -> bool:
     if not url:
         return False
     try:
-        # 使用 httpx 替代 aiohttp，设置5秒超时
+        # 使用 httpx 设置5秒超时
         async with httpx.AsyncClient(timeout=5.0) as client:
             # follow_redirects=True 确保如果CDN有跳转也能正确处理
             resp = await client.get(url, follow_redirects=True)
