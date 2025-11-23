@@ -1,6 +1,7 @@
 import pickle
 from pathlib import Path
 import aiofiles
+import aiohttp 
 from nekro_agent.services.plugin.packages import dynamic_import_pkg
 
 qqmusic_api = dynamic_import_pkg("qqmusic-api-python", "qqmusic_api")
@@ -11,14 +12,14 @@ from qqmusic_api.song import get_song_urls, SongFileType
 from qqmusic_api.login import Credential, check_expired
 from nonebot import get_bot
 from nonebot.adapters.onebot.v11 import MessageSegment, ActionFailed
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 from pydantic import Field
 
 plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.0.5",
+    version="2.0.6", 
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
@@ -105,6 +106,7 @@ async def load_and_refresh_credential() -> Credential | None:
     except Exception as e:
         # print(f"加载QQ音乐凭证失败: {e}")
         return f"加载QQ音乐凭证失败"
+
 def get_quality_priority(preferred_quality: str) -> list[SongFileType]:
     """根据优先音质返回音质优先级列表"""
     quality_map = {
@@ -147,13 +149,86 @@ async def get_song_url(song_info: dict, credential: Credential, preferred_qualit
     # 所有音质都失败
     raise ValueError(f"无法获取歌曲下载链接，所有音质尝试均失败。最后错误: {last_exception}")
 
-def get_cover(mid: str, size: int = 300) -> str | None:
-    """获取专辑封面链接"""
+async def check_cover_validity(url: str) -> bool:
+    """
+    验证封面图片是否有效（下载检查）
+    """
+    if not url:
+        return False
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
+            async with session.get(url) as resp:
+                if resp.status == 200:
+                    content = await resp.read()
+                    # 简单检查大小和魔数
+                    if len(content) > 1024:
+                        if content.startswith(b'\xff\xd8') or content.startswith(b'\x89PNG'):
+                            return True
+    except Exception as e:
+        print(f"封面验证失败: {e}, URL: {url}")
+    return False
+
+async def get_valid_cover_url(song_data: dict, size: int = 300) -> Optional[str]:
+    """
+    获取并验证有效的封面URL（按优先级尝试 专辑 -> VS值）
+    """
     if size == 0:
-        return None  # 尺寸为0时不发送封面
+        return None
     if size not in [150, 300, 500, 800]:
-        raise ValueError("封面尺寸必须是150、300、500或800")
-    return f"https://y.gtimg.cn/music/photo_new/T002R{size}x{size}M000{mid}.jpg"
+        print(f"无效的封面尺寸: {size}，重置为300")
+        size = 300
+
+    # 1. 优先尝试专辑MID
+    album_mid = song_data.get('album', {}).get('mid', '')
+    if album_mid:
+        url = f"https://y.gtimg.cn/music/photo_new/T002R{size}x{size}M000{album_mid}.jpg"
+        print(f"尝试专辑封面: {url}")
+        if await check_cover_validity(url):
+            return url
+
+    # 2. 尝试所有可用的VS值（按顺序）
+    vs_values = song_data.get('vs', [])
+    if not vs_values:
+        print("未找到VS值，且专辑封面不可用")
+        return None
+
+    # 收集所有候选VS值
+    candidate_vs = []
+
+    # 首先收集所有单个有效的VS值
+    for i, vs in enumerate(vs_values):
+        if vs and isinstance(vs, str) and len(vs) >= 3 and ',' not in vs:
+            candidate_vs.append({
+                'value': vs,
+                'priority': 1  # 高优先级
+            })
+
+    # 然后收集逗号分隔的VS值部分
+    for i, vs in enumerate(vs_values):
+        if vs and isinstance(vs, str) and ',' in vs:
+            parts = [part.strip() for part in vs.split(',') if part.strip()]
+            for part in parts:
+                if len(part) >= 3:
+                    candidate_vs.append({
+                        'value': part,
+                        'priority': 2  # 中优先级
+                    })
+
+    # 按优先级排序
+    candidate_vs.sort(key=lambda x: x['priority'])
+
+    # 按顺序尝试每个候选VS值
+    for candidate in candidate_vs:
+        val = candidate['value']
+        url = f"https://y.qq.com/music/photo_new/T062R{size}x{size}M000{val}.jpg"
+        print(f"尝试VS封面: {url}")
+        if await check_cover_validity(url):
+            return url
+
+    print("无法获取任何有效的封面")
+    return None
+
+# --- 封面处理逻辑结束 ---
 
 def parse_chat_key(chat_key: str) -> tuple[str, int]:
     """解析chat_key，返回聊天类型和目标ID"""
@@ -217,15 +292,14 @@ async def send_music(
             return f"未找到相关歌曲"
         
         first_song = result[0]
-        mid = first_song["mid"]
         singer = first_song["singer"][0]["name"]
         title = first_song["title"]
 
         # 使用模块级配置获取封面尺寸，并转换为整数
         cover_size = int(config.cover_size)
         
-        # 获取专辑封面
-        cover_url = get_cover(first_song["album"]["mid"], size=cover_size)
+        # 获取专辑封面 (更新为使用新的异步、多策略获取方法)
+        cover_url = await get_valid_cover_url(first_song, size=cover_size)
         
         # 获取播放链接（使用配置的优先音质）
         music_url = await get_song_url(first_song, credential, config.preferred_quality)
@@ -243,6 +317,8 @@ async def send_music(
             cover_msg = MessageSegment.image(cover_url)
             if not await send_message(bot, chat_type, target_id, cover_msg):
                 return "发送专辑封面失败"
+        else:
+            print(f"歌曲《{title}》无有效封面，跳过封面发送")
 
         # 发送语音消息
         voice_msg = MessageSegment.record(file=music_url)
