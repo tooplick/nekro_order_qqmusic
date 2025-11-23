@@ -2,6 +2,7 @@ import pickle
 from pathlib import Path
 import aiofiles
 import httpx 
+import json
 from nekro_agent.services.plugin.packages import dynamic_import_pkg
 
 qqmusic_api = dynamic_import_pkg("qqmusic-api-python", "qqmusic_api")
@@ -12,14 +13,14 @@ from qqmusic_api.song import get_song_urls, SongFileType
 from qqmusic_api.login import Credential, check_expired
 from nonebot import get_bot
 from nonebot.adapters.onebot.v11 import MessageSegment, ActionFailed
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Dict
 from pydantic import Field
 
 plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.0.6",
+    version="2.1.0",
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
@@ -31,9 +32,9 @@ class QQMusicPluginConfig(ConfigBase):
     cover_size: Literal["0", "150", "300", "500", "800"] = Field(
         default="500",
         title="专辑封面尺寸",
-        description="选择专辑封面尺寸,0表示不发送封面",
+        description="该设置仅影响降级发送（文字+图片）时的封面尺寸。JSON音乐卡片将始终使用800x800高清封面。",
         json_schema_extra={
-            "description": "支持150x150、300x300、500x500、800x800四种尺寸"
+            "description": "支持150x150、300x300、500x500、800x800四种尺寸，0表示不发送封面"
         }
     )
     
@@ -52,6 +53,12 @@ class QQMusicPluginConfig(ConfigBase):
         description="是否在凭证过期时自动刷新凭证",
     )
 
+    enable_json_card: bool = Field(
+        default=True,
+        title="启用JSON卡片",
+        description="是否使用QQ音乐JSON卡片发送歌曲信息（需API支持）",
+    )
+
 config: QQMusicPluginConfig = plugin.get_config(QQMusicPluginConfig)
 
 async def load_and_refresh_credential() -> Credential | None:
@@ -64,47 +71,34 @@ async def load_and_refresh_credential() -> Credential | None:
             print("QQ音乐凭证文件不存在")
             return f"QQ音乐凭证文件不存在"
 
-        # 使用异步文件读取
         async with aiofiles.open(credential_file, "rb") as f:
             credential_content = await f.read()
         
-        # 反序列化凭证
         cred: Credential = pickle.loads(credential_content)
-        
-        # 检查凭证是否过期
         is_expired = await check_expired(cred)
         
         if is_expired:
             print("QQ音乐凭证已过期")
-            
-            # 检查自动刷新配置
             if not config.auto_refresh_credential:
                 return f"自动刷新凭证功能已关闭,无法刷新过期凭证"
             
             print("尝试自动刷新...")
-            
-            # 检查是否可以刷新
             can_refresh = await cred.can_refresh()
             if can_refresh:
                 try:
                     await cred.refresh()
-                    # 保存刷新后的凭证
                     async with aiofiles.open(credential_file, "wb") as f:
                         await f.write(pickle.dumps(cred))
-                    # print("QQ音乐凭证自动刷新成功!")
                     return cred
                 except Exception as refresh_error:
-                    # print(f"QQ音乐凭证自动刷新失败: {refresh_error}")
                     return f"QQ音乐凭证自动刷新失败: {refresh_error}"
             else:
-                # print("QQ音乐凭证不支持刷新")
                 return f"QQ音乐凭证不支持刷新"
         else:
             print("QQ音乐凭证加载成功")
             return cred
             
     except Exception as e:
-        # print(f"加载QQ音乐凭证失败: {e}")
         return f"加载QQ音乐凭证失败"
 
 def get_quality_priority(preferred_quality: str) -> list[SongFileType]:
@@ -119,19 +113,14 @@ def get_quality_priority(preferred_quality: str) -> list[SongFileType]:
 async def get_song_url(song_info: dict, credential: Credential, preferred_quality: str) -> str:
     """根据优先音质获取歌曲下载链接，失败时自动降级"""
     mid = song_info['mid']
-    
-    # 获取音质优先级列表
     quality_priority = get_quality_priority(preferred_quality)
-    
     quality_names = {
         SongFileType.FLAC: "FLAC无损",
         SongFileType.MP3_320: "MP3高品质",
         SongFileType.MP3_128: "MP3标准"
     }
-    
     last_exception = None
     
-    # 按照优先级尝试不同音质
     for file_type in quality_priority:
         try:
             urls = await get_song_urls([mid], file_type=file_type, credential=credential)
@@ -146,107 +135,128 @@ async def get_song_url(song_info: dict, credential: Credential, preferred_qualit
             print(f"{quality_name}音质获取失败: {e}")
             continue
     
-    # 所有音质都失败
     raise ValueError(f"无法获取歌曲下载链接，所有音质尝试均失败。最后错误: {last_exception}")
 
-async def check_cover_validity(url: str) -> bool:
-    """
-    验证封面图片是否有效（使用 httpx 下载检查）
-    """
+async def download_cover_check(url: str) -> bool:
+    """下载并验证封面图片"""
     if not url:
         return False
     try:
-        # 使用 httpx 设置5秒超时
         async with httpx.AsyncClient(timeout=5.0) as client:
-            # follow_redirects=True 确保如果CDN有跳转也能正确处理
             resp = await client.get(url, follow_redirects=True)
-            
             if resp.status_code == 200:
                 content = resp.content
-                # 简单检查大小和魔数
                 if len(content) > 1024:
                     if content.startswith(b'\xff\xd8') or content.startswith(b'\x89PNG'):
                         return True
+                    else:
+                        print(f"封面图片格式无效: {url}")
+                else:
+                    print(f"封面图片过小: {len(content)} bytes, URL: {url}")
+            else:
+                print(f"封面下载失败: HTTP {resp.status_code}, URL: {url}")
     except Exception as e:
-        print(f"封面验证失败: {e}, URL: {url}")
+        print(f"封面下载异常: {e}, URL: {url}")
     return False
 
-async def get_valid_cover_url(song_data: dict, size: int = 300) -> Optional[str]:
-    """
-    获取并验证有效的封面URL（按优先级尝试 专辑 -> VS值）
-    """
+def get_cover_url_by_album_mid(mid: str, size: int) -> str:
+    return f"https://y.gtimg.cn/music/photo_new/T002R{size}x{size}M000{mid}.jpg"
+
+def get_cover_url_by_vs(vs: str, size: int) -> str:
+    return f"https://y.qq.com/music/photo_new/T062R{size}x{size}M000{vs}.jpg"
+
+async def get_valid_cover_url(song_data: Dict[str, Any], size: int = 300) -> Optional[str]:
+    """获取并验证有效的封面URL"""
     if size == 0:
         return None
-    if size not in [150, 300, 500, 800]:
+    
+    valid_sizes = [150, 300, 500, 800]
+    if size not in valid_sizes:
         print(f"无效的封面尺寸: {size}，重置为300")
         size = 300
 
     # 1. 优先尝试专辑MID
     album_mid = song_data.get('album', {}).get('mid', '')
     if album_mid:
-        url = f"https://y.gtimg.cn/music/photo_new/T002R{size}x{size}M000{album_mid}.jpg"
-        print(f"尝试专辑封面: {url}")
-        if await check_cover_validity(url):
+        url = get_cover_url_by_album_mid(album_mid, size)
+        if await download_cover_check(url):
+            print(f"使用专辑MID封面({size}x{size}): {url}")
             return url
 
-    # 2. 尝试所有可用的VS值（按顺序）
+    # 2. 尝试VS值
     vs_values = song_data.get('vs', [])
     if not vs_values:
         print("未找到VS值，且专辑封面不可用")
         return None
-
-    # 收集所有候选VS值
+    
     candidate_vs = []
-
-    # 首先收集所有单个有效的VS值
+    # 收集单个VS值
     for i, vs in enumerate(vs_values):
         if vs and isinstance(vs, str) and len(vs) >= 3 and ',' not in vs:
-            candidate_vs.append({
-                'value': vs,
-                'priority': 1  # 高优先级
-            })
-
-    # 然后收集逗号分隔的VS值部分
+            candidate_vs.append({'value': vs, 'priority': 1})
+    # 收集逗号分隔VS值
     for i, vs in enumerate(vs_values):
         if vs and isinstance(vs, str) and ',' in vs:
             parts = [part.strip() for part in vs.split(',') if part.strip()]
             for part in parts:
                 if len(part) >= 3:
-                    candidate_vs.append({
-                        'value': part,
-                        'priority': 2  # 中优先级
-                    })
+                    candidate_vs.append({'value': part, 'priority': 2})
 
-    # 按优先级排序
     candidate_vs.sort(key=lambda x: x['priority'])
 
-    # 按顺序尝试每个候选VS值
     for candidate in candidate_vs:
         val = candidate['value']
-        url = f"https://y.qq.com/music/photo_new/T062R{size}x{size}M000{val}.jpg"
-        print(f"尝试VS封面: {url}")
-        if await check_cover_validity(url):
+        url = get_cover_url_by_vs(val, size)
+        if await download_cover_check(url):
+            print(f"使用VS值封面({size}x{size}): {url}")
             return url
 
-    print("无法获取任何有效的封面")
+    print("无法获取任何有效的封面URL")
     return None
 
+async def get_signed_ark_card(song_info: dict, real_cover_url: str, real_music_url: str) -> Optional[str]:
+    """通过API获取签名的QQ音乐JSON Ark卡片数据"""
+    try:
+        mid = song_info['mid']
+        title = song_info['title']
+        singer = song_info['singer'][0]['name']
+        web_jump_url = f"https://y.qq.com/n/ryqq/songDetail/{mid}"
+        
+        data = {
+            "url": real_music_url,
+            "jump": web_jump_url,
+            "song": title,
+            "singer": singer,
+            "cover": real_cover_url if real_cover_url else "",
+            "format": "qq"
+        }
+        
+        api_url = "https://oiapi.net/api/QQMusicJSONArk"
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(api_url, data=data)
+            if resp.status_code == 200:
+                resp_json = resp.json()
+                if resp_json.get("code") == 1 and resp_json.get("message"):
+                    return resp_json["message"]
+                else:
+                    print(f"获取Ark卡片失败: {resp_json}")
+            else:
+                print(f"Ark API请求失败: {resp.status_code}")
+    except Exception as e:
+        print(f"获取Ark卡片出错: {e}")
+    return None
 
 def parse_chat_key(chat_key: str) -> tuple[str, int]:
-    """解析chat_key，返回聊天类型和目标ID"""
     if "_" not in chat_key:
         raise ValueError(f"无效的 chat_key: {chat_key}")
-    
     adapter_id, old_chat_key = chat_key.split("-", 1)
     chat_type, target_id = old_chat_key.split("_", 1)
-    
     if not target_id.isdigit() or chat_type not in ("private", "group"):
         raise ValueError(f"chat_key 格式错误: {chat_key}")
-    
     return chat_type, int(target_id)
 
 async def send_message(bot, chat_type: str, target_id: int, message) -> bool:
-    """发送消息的通用函数"""
     try:
         if chat_type == "private":
             await bot.call_api("send_private_msg", user_id=target_id, message=message)
@@ -255,7 +265,7 @@ async def send_message(bot, chat_type: str, target_id: int, message) -> bool:
         return True
     except ActionFailed as e:
         print(f"发送消息失败: {e}")
-        return f"发送消息失败: {e}"
+        return False
 
 @plugin.mount_sandbox_method(
     SandboxMethodType.AGENT,
@@ -267,28 +277,19 @@ async def send_music(
         chat_key: str,
         keyword: str
 ) -> str:
-    """
-    搜索 QQ 音乐歌曲并发送给用户（文字+封面+语音）
-
-    Args:
-        chat_key (str): 会话标识，例如"onebot_v11-private_12345678" 或 "onebot_v11-group_12345678"
-        keyword (str): 搜索关键词：歌曲名 歌手名
-
-    Returns:
-        str: 发送结果提示信息，例如 "歌曲《xxx》已发送"
-    """
+    """搜索并发送音乐"""
     try:
         bot = get_bot()
 
-        # 加载凭证
+        # 1. 获取凭证
         credential = await load_and_refresh_credential()
         if not credential:
             if config.auto_refresh_credential:
                 return f"QQ音乐凭证不存在或已过期且无法刷新，无法播放歌曲"
             else:
-                return f"QQ音乐凭证已过期，自动刷新功能已关闭，无法播放VIP歌曲"
+                return f"QQ音乐凭证已过期，无法播放VIP歌曲"
 
-        # 搜索歌曲
+        # 2. 搜索歌曲
         result = await search.search_by_type(keyword=keyword, num=1)
         if not result:
             return f"未找到相关歌曲"
@@ -297,40 +298,66 @@ async def send_music(
         singer = first_song["singer"][0]["name"]
         title = first_song["title"]
 
-        # 使用模块级配置获取封面尺寸，并转换为整数
-        cover_size = int(config.cover_size)
+        # 3. 获取封面 (双轨制：卡片强制800，普通消息遵循配置)
         
-        # 获取专辑封面 (更新为使用新的异步、多策略获取方法)
-        cover_url = await get_valid_cover_url(first_song, size=cover_size)
+        # 3.1 获取卡片专用封面 (固定800)
+        # 无论用户配置如何，如果开启了卡片功能，尝试获取800尺寸封面
+        card_cover_url = None
+        if config.enable_json_card:
+            card_cover_url = await get_valid_cover_url(first_song, size=800)
         
-        # 获取播放链接（使用配置的优先音质）
+        # 3.2 获取普通消息专用封面 (遵循用户配置)
+        config_size = int(config.cover_size)
+        msg_cover_url = None
+        
+        if config_size > 0:
+            # 优化：如果配置正好也是800，且刚才已经获取成功了，直接复用，避免重复请求
+            if config_size == 800 and card_cover_url:
+                msg_cover_url = card_cover_url
+            else:
+                msg_cover_url = await get_valid_cover_url(first_song, size=config_size)
+        
+        # 4. 获取音频流链接
         music_url = await get_song_url(first_song, credential, config.preferred_quality)
 
-        # 解析 chat_key
+        # 5. 解析发送目标
         chat_type, target_id = parse_chat_key(chat_key)
 
-        # 发送文字消息
-        message_text = f"{title}-{singer}"
-        if not await send_message(bot, chat_type, target_id, message_text):
-            return "发送文字消息失败"
+        # 6. 尝试发送卡片 (使用 card_cover_url)
+        card_sent = False
+        if config.enable_json_card:
+            print(f"尝试获取并发送JSON卡片: {title}")
+            # 这里传入 card_cover_url (800尺寸)
+            json_payload = await get_signed_ark_card(first_song, card_cover_url, music_url)
+            
+            if json_payload:
+                json_msg = MessageSegment.json(json_payload)
+                if await send_message(bot, chat_type, target_id, json_msg):
+                    card_sent = True
+                    print("JSON卡片发送成功")
+                else:
+                    print("JSON卡片发送失败")
+            else:
+                print("获取JSON卡片数据失败")
 
-        # 发送专辑封面
-        if cover_url:
-            cover_msg = MessageSegment.image(cover_url)
-            if not await send_message(bot, chat_type, target_id, cover_msg):
-                return "发送专辑封面失败"
+        # 7. 结果处理
+        if card_sent:
+            return f"歌曲《{title}》卡片已发送"
         else:
-            print(f"歌曲《{title}》无有效封面，跳过封面发送")
+            # 降级：发送文字 + 图片(使用 msg_cover_url) + 语音
+            message_text = f"{title}-{singer}"
+            await send_message(bot, chat_type, target_id, message_text)
 
-        # 发送语音消息
-        voice_msg = MessageSegment.record(file=music_url)
-        if not await send_message(bot, chat_type, target_id, voice_msg):
-            return "发送语音消息失败"
+            if msg_cover_url:
+                cover_msg = MessageSegment.image(msg_cover_url)
+                await send_message(bot, chat_type, target_id, cover_msg)
 
-        return f"歌曲《{title}》已发送"
+            voice_msg = MessageSegment.record(file=music_url)
+            await send_message(bot, chat_type, target_id, voice_msg)
+            
+            return f"歌曲《{title}》已以传统方式发送"
 
     except Exception as e:
-        # print(f"发送音乐消息时发生错误: {e}")
         return f"发送音乐消息失败: {e}"
 
 @plugin.mount_cleanup_method()
