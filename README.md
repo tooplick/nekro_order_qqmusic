@@ -1,6 +1,6 @@
 # QQ音乐点歌插件
 
-一个基于 Nekro Agent 框架的 QQ 音乐点歌插件，允许 AI 助手通过 QQ 音乐搜索并发送音乐消息。
+一个基于 [Nekro Agent](https://github.com/KroMiose/nekro-agent) 框架的 QQ 音乐点歌插件，允许 AI 助手通过 QQ 音乐搜索并发送音乐消息。
 
 ## 功能特点
 
