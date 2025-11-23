@@ -32,19 +32,13 @@ class QQMusicPluginConfig(ConfigBase):
     cover_size: Literal["0", "150", "300", "500", "800"] = Field(
         default="500",
         title="专辑封面尺寸",
-        description="该设置仅影响降级发送（文字+图片）时的封面尺寸。JSON音乐卡片将始终使用800x800高清封面。",
-        json_schema_extra={
-            "description": "支持150x150、300x300、500x500、800x800四种尺寸，0表示不发送封面"
-        }
+        description="选择发送（文字+封面+语音消息）时的封面尺寸，0表示不发送。"，
     )
     
     preferred_quality: Literal["FLAC", "MP3_320", "MP3_128"] = Field(
         default="MP3_320",
         title="优先音质",
         description="选择歌曲播放的优先音质，如果无法获取将自动降级",
-        json_schema_extra={
-            "description": "FLAC为无损音质，MP3_320为高品质，MP3_128为标准品质"
-        }
     )
     
     auto_refresh_credential: bool = Field(
@@ -56,7 +50,7 @@ class QQMusicPluginConfig(ConfigBase):
     enable_json_card: bool = Field(
         default=True,
         title="启用JSON卡片",
-        description="是否使用QQ音乐JSON卡片发送歌曲信息（需API支持）",
+        description="使用QQ音乐JSON卡片发送歌曲信息（需API支持）",
     )
 
 config: QQMusicPluginConfig = plugin.get_config(QQMusicPluginConfig)
@@ -364,7 +358,7 @@ async def send_music(
             voice_msg = MessageSegment.record(file=music_url)
             await send_message(bot, chat_type, target_id, voice_msg)
             
-            return f"歌曲《{title}》已以传统方式发送"
+            return f"歌曲《{title}》已以(文字+封面+语音)方式发送"
 
     except Exception as e:
         return f"发送音乐消息失败: {e}"
