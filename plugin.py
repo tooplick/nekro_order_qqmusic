@@ -301,9 +301,9 @@ async def send_music(
         singer = first_song["singer"][0]["name"]
         title = first_song["title"]
 
-        # 3. 获取封面 (双轨制：卡片强制800，普通消息遵循配置)
+        # 3. 获取封面 (双轨制：卡片强制300，普通消息遵循配置)
         
-        # 3.1 获取卡片专用封面 (固定800)
+        # 3.1 获取卡片专用封面 (固定300)
         # 无论用户配置如何，如果开启了卡片功能，尝试获取800尺寸封面
         card_cover_url = None
         if config.enable_json_card:
@@ -314,8 +314,8 @@ async def send_music(
         msg_cover_url = None
         
         if config_size > 0:
-            # 优化：如果配置正好也是800，且刚才已经获取成功了，直接复用，避免重复请求
-            if config_size == 800 and card_cover_url:
+            # 优化：如果配置正好也是300，且刚才已经获取成功了，直接复用，避免重复请求
+            if config_size == 300 and card_cover_url:
                 msg_cover_url = card_cover_url
             else:
                 msg_cover_url = await get_valid_cover_url(first_song, size=config_size)
