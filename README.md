@@ -70,7 +70,7 @@ Bot 可以通过调用 `send_music` 方法来发送音乐:
 
 ## 作者信息
 
-- **作者**:GeQian
+- **作者**:搁浅
 - **GitHub**：[https://github.com/tooplick](https://github.com/tooplick)
 - **Web页面支持**：运阳
 - **GitHub**：[https://github.com/yang208115](https://github.com/yang208115)
