@@ -115,7 +115,8 @@ async function checkCredentialStatus() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const data = await response.json();
-        showToast(data.valid ? '✓ 凭证有效' : '✗ 凭证无效或已过期', data.valid ? 'success' : 'error');
+        const msg = data.detail || (data.valid ? '✓ 凭证有效' : '✗ 凭证无效或已过期');
+        showToast(msg, data.valid ? 'success' : 'error');
     } catch (error) {
         showToast(`检查失败: ${error.message}`, 'error');
     }
