@@ -11,24 +11,18 @@
 
 ## 凭证生成
 
-### 方法一：使用Web界面（推荐）
+### 使用Web界面
 插件提供了一个Web界面用于生成和管理QQ音乐凭证：
 - 启动插件后，访问 [http://<服务器ip:NA端口>/plugins/GeQian.order_qqmusic](../plugins/GeQian.order_qqmusic)
-- 点击"QQ登录"或"微信登录"按钮
+- 选择登录方式
 - 使用手机扫描二维码完成登录
 - 凭证将自动保存
 - 请使用VIP账号生成凭证!
-### 方法二：外部工具生成
-- 生成工具见Releases
-- 凭证文件"qqmusic_cred.pkl"
-- 请放入插件的配置文件夹:
-- /nekro_agent/plugin_data/GeQian.order_qqmusic/qqmusic_cred.pkl
-- 请使用VIP账号生成凭证！
 
 ## API接口
 
 插件提供以下API接口用于凭证管理：
-- `GET /api/get_qrcode/{type}` - 生成登录二维码（type: qq|wx）
+- `GET /api/get_qrcode/{type}` - 生成登录二维码（type: qq|wx|mobile）
 - `GET /api/credential/status` - 检查凭证状态
 - `POST /api/credential/refresh` - 刷新凭证
 - `GET /api/credential/info` - 获取凭证信息
@@ -75,10 +69,8 @@ Bot 可以通过调用 `send_music` 方法来发送音乐:
 
 ## 作者信息
 
-- **作者**：搁浅
-- **GitHub**：[https://github.com/tooplick](https://github.com/tooplick)
-- **Web页面支持**：运阳
-- **GitHub**：[https://github.com/yang208115](https://github.com/yang208115)
+- **作者**：[搁浅](https://github.com/tooplick)
+- **Web页面支持**：[运阳](https://github.com/yang208115)
 
 ## 许可证
 
