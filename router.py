@@ -157,7 +157,13 @@ async def check_credential_status(since_time: float = 0):
         async with aiofiles.open(credential_file, "rb") as f:
             credential_content = await f.read()
         
-        cred: Credential = pickle.loads(credential_content)
+        try:
+            cred: Credential = pickle.loads(credential_content)
+        except (ModuleNotFoundError, AttributeError, ImportError) as e:
+            logger.warning(f"凭证文件已损坏或版本不兼容，自动删除: {e}")
+            credential_file.unlink(missing_ok=True)
+            return {"valid": False, "detail": "凭证已失效，请重新登录"}
+
         is_expired = await check_expired(cred)
         
         return {

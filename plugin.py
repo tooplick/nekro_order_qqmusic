@@ -7,7 +7,6 @@ import json
 from nekro_agent.api.plugin import NekroPlugin, SandboxMethodType, ConfigBase
 from nekro_agent.api.schemas import AgentCtx
 
-# 使用嵌入的本地 qqmusic_api 库 - 直接导入需要的函数
 from .search import search_by_type
 from .song import get_song_urls, SongFileType
 from .login import Credential, check_expired
@@ -20,7 +19,7 @@ plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.2.0",
+    version="2.1.1",
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
@@ -36,7 +35,7 @@ class QQMusicPluginConfig(ConfigBase):
     )
     
     preferred_quality: Literal["FLAC", "MP3_320", "MP3_128"] = Field(
-        default="MP3_320",
+        default="FLAC",
         title="优先音质",
         description="选择歌曲播放的优先音质，如果无法获取将自动降级",
     )
@@ -68,7 +67,13 @@ async def load_and_refresh_credential() -> Credential | None:
         async with aiofiles.open(credential_file, "rb") as f:
             credential_content = await f.read()
         
-        cred: Credential = pickle.loads(credential_content)
+        try:
+            cred: Credential = pickle.loads(credential_content)
+        except (ModuleNotFoundError, AttributeError, ImportError, EOFError):
+            print("凭证文件已损坏或版本不兼容，自动删除")
+            credential_file.unlink(missing_ok=True)
+            return "凭证已损坏，请重新登录"
+
         is_expired = await check_expired(cred)
         
         if is_expired:
