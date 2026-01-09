@@ -3,12 +3,13 @@ import os
 import asyncio
 import base64
 import pickle
+import aiofiles
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from qqmusic_api.login import get_qrcode, check_qrcode, QRLoginType, Credential, QRCodeLoginEvents, check_expired
+from .login import get_qrcode, check_qrcode, check_mobile_qr, QRLoginType, Credential, QRCodeLoginEvents, check_expired
 
 from nekro_agent.api.core import logger
 
@@ -50,7 +51,9 @@ async def webui():
     html_path = os.path.join(current_dir, "web", "script.js")
     
     # 返回HTML文件
-    return FileResponse(html_path, media_type="text/js")
+    return FileResponse(html_path, media_type="text/javascript")
+
+
 
 @router.get("/get_qrcode/{qr_type}", summary="二维码登录")
 async def qr_login(qr_type: str) -> str:
@@ -58,20 +61,23 @@ async def qr_login(qr_type: str) -> str:
     try:
         if qr_type == 'wx':
             qr = await get_qrcode(QRLoginType.WX)
+            asyncio.create_task(save_token(qr))
         elif qr_type == 'qq':
             qr = await get_qrcode(QRLoginType.QQ)
+            asyncio.create_task(save_token(qr))
+        elif qr_type == 'mobile':
+            qr = await get_qrcode(QRLoginType.MOBILE)
+            asyncio.create_task(save_token_mobile(qr))
         else:
-            raise HTTPException(status_code=400, detail="无效的登录类型，仅支持 'wx' 或 'qq'")
+            raise HTTPException(status_code=400, detail="无效的登录类型，仅支持 'wx'、'qq' 或 'mobile'")
         
-        # 启动后台任务检查二维码状态
-        asyncio.create_task(save_token(qr))
         logger.info(base64.b64encode(qr.data).decode())
         return base64.b64encode(qr.data).decode()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取二维码失败: {str(e)}")
 
 async def save_token(qr):
-    """后台任务：检查二维码状态并保存凭证"""
+    """后台任务：检查二维码状态并保存凭证（QQ/微信登录）"""
     credential = None
     max_attempts = 30  # 最多尝试30次，每次间隔2秒，总计60秒超时
     attempts = 0
@@ -103,13 +109,64 @@ async def save_token(qr):
         print(f"检查二维码状态时发生错误: {e}")
         return None
 
+async def save_token_mobile(qr):
+    """后台任务：检查二维码状态并保存凭证（手机客户端登录）"""
+    try:
+        async for event, credential in check_mobile_qr(qr):
+            print(f"手机登录二维码状态: {event.name}")
+            
+            if event == QRCodeLoginEvents.DONE:
+                print(f"手机登录成功! {credential}")
+                with CREDENTIAL_FILE.open("wb") as f:
+                    pickle.dump(credential, f)
+                return credential
+            elif event == QRCodeLoginEvents.TIMEOUT:
+                print("手机登录二维码过期，请重新获取")
+                return None
+            elif event == QRCodeLoginEvents.REFUSE:
+                print("拒绝手机登录，请重新扫码")
+                return None
+        
+        return None
+    except Exception as e:
+        print(f"检查手机登录二维码状态时发生错误: {e}")
+        return None
+
 
 @router.get("/credential/status", summary="检查凭证状态")
-async def check_credential_status():
-    """检查凭证状态"""
-    manager = CredentialManager()
-    is_valid = await manager.check_status()
-    return {"valid": is_valid}
+async def check_credential_status(since_time: float = 0):
+    """检查凭证状态
+    
+    Args:
+        since_time: 可选，仅检查在该时间戳之后更新的凭证（用于登录轮询）
+    """
+    try:
+        plugin_dir = plugin.get_plugin_path()
+        credential_file = plugin_dir / "qqmusic_cred.pkl"
+        
+        if not credential_file.exists():
+            return {"valid": False, "detail": "凭证文件不存在"}
+            
+        # 如果指定了时间戳，检查文件修改时间
+        if since_time > 0:
+            mtime = credential_file.stat().st_mtime
+            if mtime <= since_time:
+                # 文件未更新（还是旧凭证）
+                return {"valid": False, "detail": "等待新凭证生成"}
+
+        async with aiofiles.open(credential_file, "rb") as f:
+            credential_content = await f.read()
+        
+        cred: Credential = pickle.loads(credential_content)
+        is_expired = await check_expired(cred)
+        
+        return {
+            "valid": not is_expired,
+            "uin": str(cred.str_musicid) if not is_expired else None
+        }
+    except Exception as e:
+        logger.error(f"检查凭证状态失败: {str(e)}")
+        return {"valid": False, "error": str(e)}
 
 @router.post("/credential/refresh", summary="刷新凭证")
 async def refresh_credential():

@@ -3,14 +3,14 @@ from pathlib import Path
 import aiofiles
 import httpx 
 import json
-from nekro_agent.services.plugin.packages import dynamic_import_pkg
 
-qqmusic_api = dynamic_import_pkg("qqmusic-api-python", "qqmusic_api")
 from nekro_agent.api.plugin import NekroPlugin, SandboxMethodType, ConfigBase
 from nekro_agent.api.schemas import AgentCtx
-from qqmusic_api import search, song
-from qqmusic_api.song import get_song_urls, SongFileType
-from qqmusic_api.login import Credential, check_expired
+
+# 使用嵌入的本地 qqmusic_api 库 - 直接导入需要的函数
+from .search import search_by_type
+from .song import get_song_urls, SongFileType
+from .login import Credential, check_expired
 from nonebot import get_bot
 from nonebot.adapters.onebot.v11 import MessageSegment, ActionFailed
 from typing import Any, Literal, Optional, Dict
@@ -20,7 +20,7 @@ plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.1.0",
+    version="2.2.0",
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
@@ -293,7 +293,7 @@ async def send_music(
                 return f"QQ音乐凭证已过期，无法播放VIP歌曲"
 
         # 2. 搜索歌曲
-        result = await search.search_by_type(keyword=keyword, num=1)
+        result = await search_by_type(keyword=keyword, num=1)
         if not result:
             return f"未找到相关歌曲"
         

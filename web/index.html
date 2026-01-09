@@ -10,60 +10,96 @@
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>QQ音乐凭证管理</h1>
-        </header>
+    <!-- 顶部 Toast 通知 -->
+    <div id="toast" class="toast"></div>
 
-        <div class="content">
-            <div class="section">
-                <h2>生成登录二维码</h2>
-                <div class="login-options">
-                    <button id="qqLoginBtn" class="login-btn">
-                        <i class="fab fa-qq"></i> QQ登录
-                    </button>
-                    <button id="wxLoginBtn" class="login-btn">
-                        <i class="fab fa-weixin"></i> 微信登录
-                    </button>
-                </div>
-                <div id="qrcodeContainer" class="qrcode-container">
-                    <p>请使用手机扫描以下二维码登录：</p>
-                    <div class="qrcode-image-container">
-                        <img id="qrcodeImage" class="qrcode-image" src="" alt="登录二维码">
-                        <div id="qrcodePlaceholder" class="qrcode-placeholder">
-                            <i class="fas fa-qrcode"></i>
-                            <p>点击上方按钮生成二维码</p>
-                        </div>
-                    </div>
-                    <p id="qrcodeStatus" class="qrcode-status">等待生成二维码...</p>
-                </div>
+    <!-- 登录方式选择弹窗 -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>选择登录方式</h3>
+                <button class="close-btn" onclick="closeModal('loginModal')">&times;</button>
             </div>
-
-            <div class="section">
-                <h2>凭证状态</h2>
-                <button id="checkStatusBtn" class="action-btn">
-                    <i class="fas fa-check-circle"></i> 检查凭证状态
+            <div class="modal-body">
+                <button class="login-option qq-btn" onclick="generateQRCode('qq')">
+                    <i class="fab fa-qq"></i>
+                    <span>QQ登录</span>
                 </button>
-                <div id="statusResult" class="result"></div>
-            </div>
-
-            <div class="section">
-                <h2>刷新凭证</h2>
-                <button id="refreshBtn" class="action-btn">
-                    <i class="fas fa-sync-alt"></i> 刷新凭证
+                <button class="login-option wx-btn" onclick="generateQRCode('wx')">
+                    <i class="fab fa-weixin"></i>
+                    <span>微信登录</span>
                 </button>
-                <div id="refreshResult" class="result"></div>
-            </div>
-
-            <div class="section">
-                <h2>凭证信息</h2>
-                <button id="infoBtn" class="action-btn">
-                    <i class="fas fa-info-circle"></i> 查看凭证信息
+                <button class="login-option mobile-btn" onclick="generateQRCode('mobile')">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>QQ音乐客户端</span>
                 </button>
-                <div id="infoResult" class="result"></div>
             </div>
         </div>
+    </div>
 
+    <!-- 二维码弹窗 -->
+    <div id="qrcodeModal" class="modal">
+        <div class="modal-content qrcode-modal">
+            <div class="modal-header">
+                <h3 id="qrcodeTitle">扫码登录</h3>
+                <button class="close-btn" onclick="closeModal('qrcodeModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="qrcode-box">
+                    <img id="qrcodeImage" class="qrcode-image" src="" alt="登录二维码">
+                    <div id="qrcodePlaceholder" class="qrcode-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p>生成中...</p>
+                    </div>
+                </div>
+                <p id="qrcodeStatus" class="qrcode-status">请使用手机扫描二维码</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 凭证信息弹窗 -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content info-modal">
+            <div class="modal-header">
+                <h3>凭证信息</h3>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="copyAllCredentials()" title="复制全部">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="close-btn" onclick="closeModal('infoModal')">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="infoContent" class="info-content">
+                    <div class="info-loading">
+                        <div class="loading-spinner"></div>
+                        <p>加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主页面 -->
+    <div class="main-page">
+        <div class="button-grid">
+            <button class="main-btn" onclick="openModal('loginModal')">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>登录</span>
+            </button>
+            <button class="main-btn" onclick="checkCredentialStatus()">
+                <i class="fas fa-check-circle"></i>
+                <span>检查凭证状态</span>
+            </button>
+            <button class="main-btn" onclick="refreshCredential()">
+                <i class="fas fa-sync-alt"></i>
+                <span>刷新凭证</span>
+            </button>
+            <button class="main-btn" onclick="showCredentialInfo()">
+                <i class="fas fa-info-circle"></i>
+                <span>查看凭证信息</span>
+            </button>
+        </div>
     </div>
 
     <script src="script.js"></script>
