@@ -5,27 +5,18 @@
 ## 功能特点
 
 - 智能搜索 QQ 音乐歌曲
-- **支持外部API** (默认: `https://api.ygking.top`)
+- **支持外部API** 
+   - (默认: `https://api.ygking.top`)
 - 可配置专辑封面尺寸
 - 可选FLAC,MP3_320,MP3_128音质
 - 提供Web界面用于生成和管理QQ音乐凭证
-
-## 配置项
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `external_api_url` | `https://api.ygking.top` | 外部API地址，留空则使用本地凭证 |
-| `cover_size` | `500` | 封面尺寸 (0/150/300/500/800) |
-| `preferred_quality` | `FLAC` | 优先音质 (FLAC/MP3_320/MP3_128) |
-| `auto_refresh_credential` | `True` | 自动刷新凭证 |
-| `enable_json_card` | `True` | 使用JSON卡片发送 |
 
 ## 使用模式
 
 ### 外部API模式 (推荐)
 配置 `external_api_url` 后，插件将优先使用外部API进行搜索和获取歌曲URL，无需本地凭证。
 
-### 本地凭证模式
+### 本地凭证模式：[点此](../plugins/GeQian.order_qqmusic)
 将 `external_api_url` 留空，或外部API不可用时自动回退到本地凭证。
 
 ## 凭证生成 (本地模式)
