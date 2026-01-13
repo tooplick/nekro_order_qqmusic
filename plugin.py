@@ -30,6 +30,12 @@ plugin = NekroPlugin(
 class QQMusicPluginConfig(ConfigBase):
     """QQ音乐插件配置项"""
 
+    external_api_url: str = Field(
+        default="https://api.ygking.top",
+        title="外部API地址",
+        description="外部QQ音乐API地址，留空则使用本地凭证。凭证优先级: 外部API > 本地凭证",
+    )
+
     cover_size: Literal["0", "150", "300", "500", "800"] = Field(
         default="500",
         title="专辑封面尺寸",
@@ -55,6 +61,60 @@ class QQMusicPluginConfig(ConfigBase):
     )
 
 config: QQMusicPluginConfig = plugin.get_config(QQMusicPluginConfig)
+
+# ========== 外部API功能 ==========
+
+async def search_from_api(keyword: str, num: int = 1) -> list | None:
+    """通过外部API搜索歌曲"""
+    if not config.external_api_url:
+        return None
+    
+    try:
+        api_url = config.external_api_url.rstrip('/')
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{api_url}/api/search", params={
+                "keyword": keyword,
+                "type": "song",
+                "num": num
+            })
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("code") == 0 and data.get("data", {}).get("list"):
+                    print(f"通过外部API搜索成功: {keyword}")
+                    return data["data"]["list"]
+            print(f"外部API搜索失败: {resp.status_code}")
+    except Exception as e:
+        print(f"外部API搜索异常: {e}")
+    return None
+
+async def get_song_url_from_api(mid: str, quality: str = "128") -> str | None:
+    """通过外部API获取歌曲URL"""
+    if not config.external_api_url:
+        return None
+    
+    try:
+        api_url = config.external_api_url.rstrip('/')
+        quality_map = {"FLAC": "flac", "MP3_320": "320", "MP3_128": "128"}
+        q = quality_map.get(quality, "128")
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{api_url}/api/song/url", params={
+                "mid": mid,
+                "quality": q
+            })
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("code") == 0 and data.get("data"):
+                    url = data["data"].get(mid)
+                    if url:
+                        print(f"通过外部API获取歌曲URL成功: {mid}")
+                        return url
+            print(f"外部API获取URL失败: {resp.status_code}")
+    except Exception as e:
+        print(f"外部API获取URL异常: {e}")
+    return None
+
+# ========== 本地凭证功能 ==========
 
 async def load_and_refresh_credential() -> Credential | None:
     """加载本地凭证，如果过期则根据配置自动刷新，使用插件持久化目录"""
@@ -291,27 +351,60 @@ async def send_music(
     try:
         bot = get_bot()
 
-        # 1. 获取凭证
-        credential = await load_and_refresh_credential()
-        if not credential:
-            if config.auto_refresh_credential:
-                return f"QQ音乐凭证不存在或已过期且无法刷新，无法播放歌曲"
-            else:
-                return f"QQ音乐凭证已过期，无法播放VIP歌曲"
+        # 凭证优先级: 外部API > 本地凭证
+        use_external_api = False
+        credential = None
+        first_song = None
+        music_url = None
 
-        # 2. 搜索歌曲
-        result = await search_by_type(keyword=keyword, num=1)
-        if not result:
-            return f"未找到相关歌曲"
+        # 1. 尝试外部API (优先)
+        if config.external_api_url:
+            print(f"尝试使用外部API: {config.external_api_url}")
+            
+            # 1.1 通过外部API搜索
+            result = await search_from_api(keyword, num=1)
+            if result:
+                first_song = result[0]
+                mid = first_song.get("mid")
+                
+                # 1.2 通过外部API获取歌曲URL
+                if mid:
+                    music_url = await get_song_url_from_api(mid, config.preferred_quality)
+                    if music_url:
+                        use_external_api = True
+                        print("外部API获取成功，使用外部API模式")
         
-        first_song = result[0]
-        singer = first_song["singer"][0]["name"]
-        title = first_song["title"]
+        # 2. 外部API失败时回退到本地凭证
+        if not use_external_api:
+            print("使用本地凭证模式")
+            credential = await load_and_refresh_credential()
+            if isinstance(credential, str):  # 返回错误信息
+                return credential
+            if not credential:
+                if config.auto_refresh_credential:
+                    return f"QQ音乐凭证不存在或已过期且无法刷新，无法播放歌曲"
+                else:
+                    return f"QQ音乐凭证已过期，无法播放VIP歌曲"
+
+            # 2.1 本地搜索
+            result = await search_by_type(keyword=keyword, num=1)
+            if not result:
+                return f"未找到相关歌曲"
+            
+            first_song = result[0]
+            
+            # 2.2 获取音频流链接 (本地)
+            music_url = await get_song_url(first_song, credential, config.preferred_quality)
+
+        if not first_song or not music_url:
+            return f"无法获取歌曲信息或播放链接"
+
+        singer = first_song["singer"][0]["name"] if first_song.get("singer") else "未知歌手"
+        title = first_song.get("title", first_song.get("name", "未知歌曲"))
 
         # 3. 获取封面 (双轨制：卡片强制500，普通消息遵循配置)
         
         # 3.1 获取卡片专用封面 (固定500)
-        # 无论用户配置如何，如果开启了卡片功能，尝试获取500尺寸封面
         card_cover_url = None
         if config.enable_json_card:
             card_cover_url = await get_valid_cover_url(first_song, size=500)
@@ -321,16 +414,12 @@ async def send_music(
         msg_cover_url = None
         
         if config_size > 0:
-            # 优化：如果配置正好也是500，且刚才已经获取成功了，直接复用，避免重复请求
             if config_size == 500 and card_cover_url:
                 msg_cover_url = card_cover_url
             else:
                 msg_cover_url = await get_valid_cover_url(first_song, size=config_size)
-        
-        # 4. 获取音频流链接
-        music_url = await get_song_url(first_song, credential, config.preferred_quality)
 
-        # 5. 解析发送目标
+        # 4. 解析发送目标
         chat_type, target_id = parse_chat_key(chat_key)
 
         # 6. 尝试发送卡片 (使用 card_cover_url)

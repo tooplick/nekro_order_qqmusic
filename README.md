@@ -5,17 +5,34 @@
 ## 功能特点
 
 - 智能搜索 QQ 音乐歌曲
+- **支持外部API** (默认: `https://api.ygking.top`)
 - 可配置专辑封面尺寸
 - 可选FLAC,MP3_320,MP3_128音质
 - 提供Web界面用于生成和管理QQ音乐凭证
 
-## 凭证生成
+## 配置项
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `external_api_url` | `https://api.ygking.top` | 外部API地址，留空则使用本地凭证 |
+| `cover_size` | `500` | 封面尺寸 (0/150/300/500/800) |
+| `preferred_quality` | `FLAC` | 优先音质 (FLAC/MP3_320/MP3_128) |
+| `auto_refresh_credential` | `True` | 自动刷新凭证 |
+| `enable_json_card` | `True` | 使用JSON卡片发送 |
+
+## 使用模式
+
+### 外部API模式 (推荐)
+配置 `external_api_url` 后，插件将优先使用外部API进行搜索和获取歌曲URL，无需本地凭证。
+
+### 本地凭证模式
+将 `external_api_url` 留空，或外部API不可用时自动回退到本地凭证。
+
+## 凭证生成 (本地模式)
 
 ### 使用Web界面
-插件提供了一个Web界面用于生成和管理QQ音乐凭证：
-- 启动插件后，访问 [http://<服务器ip:NA端口>/plugins/GeQian.order_qqmusic](../plugins/GeQian.order_qqmusic)
-- 选择登录方式
-- 使用手机扫描二维码完成登录
+- 访问 [http://<服务器ip:NA端口>/plugins/GeQian.order_qqmusic](../plugins/GeQian.order_qqmusic)
+- 选择登录方式，扫码完成登录
 - 凭证将自动保存
 - 请使用VIP账号生成凭证!
 
@@ -29,21 +46,20 @@
 
 ### Bot 调用
 
-Bot 可以通过调用 `send_music` 方法来发送音乐:
-
 ```python
 # 手动使用
 /exec send_music("onebot_v11-private_12345678", "晴天")
 ```
 
-## 技术细节
+### 外部API部署
 
-- 使用 QQ 音乐官方 API 进行搜索和音频获取
-- 支持音频格式自动降级（FLAC → MP3_320 → MP3_128）
-- 异步处理所有网络请求
-- 提供Web界面用于凭证管理
+详情见：[tooplick/qq-music-api](https://github.com/tooplick/qq-music-api)
 
 ## 版本历史
+
+- v2.2.0: 新增外部API支持
+  - 支持通过外部API搜索和获取歌曲URL
+  - 凭证优先级: 外部API > 本地凭证
 - v2.1.1: 优化和添加功能
   - 迁移API库至本地
   - 新增支持手机客户端登录
@@ -74,7 +90,6 @@ Bot 可以通过调用 `send_music` 方法来发送音乐:
 
 ## 许可证
 
-本项目采用 MIT 许可证。详见 LICENSE 文件。
 本代码遵循 [GPL-3.0 License](https://github.com/tooplick/nekro_order_qqmusic/blob/main/LICENSE) 协议
 
 ## 注意事项
