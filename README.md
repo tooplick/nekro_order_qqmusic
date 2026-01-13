@@ -16,13 +16,14 @@
 ### 外部API模式 (推荐)
 配置 `external_api_url` 后，插件将优先使用外部API进行搜索和获取歌曲URL，无需本地凭证。
 
-### 本地凭证模式：[点此](../plugins/GeQian.order_qqmusic)
+### 本地凭证模式：
+[点此登录](../plugins/GeQian.order_qqmusic)  
 将 `external_api_url` 留空，或外部API不可用时自动回退到本地凭证。
 
 ## 凭证生成 (本地模式)
 
 ### 使用Web界面
-- 访问 [http://<服务器ip:NA端口>/plugins/GeQian.order_qqmusic](../plugins/GeQian.order_qqmusic)
+- 访问 `http://<服务器ip:NA端口>/plugins/GeQian.order_qqmusic`
 - 选择登录方式，扫码完成登录
 - 凭证将自动保存
 - 请使用VIP账号生成凭证!
