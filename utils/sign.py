@@ -4,7 +4,8 @@ import re
 from base64 import b64encode
 from hashlib import sha1
 
-import orjson as json
+from nekro_agent.api.plugin import dynamic_import_pkg
+json = dynamic_import_pkg("orjson")
 
 PART_1_INDEXES = [23, 14, 6, 36, 16, 40, 7, 19]
 PART_2_INDEXES = [16, 1, 32, 12, 19, 27, 8, 5]

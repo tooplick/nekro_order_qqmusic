@@ -1,7 +1,9 @@
 import pickle
 from pathlib import Path
-import aiofiles
-import httpx 
+from nekro_agent.api.plugin import dynamic_import_pkg
+
+aiofiles = dynamic_import_pkg("aiofiles")
+httpx = dynamic_import_pkg("httpx") 
 import json
 
 from nekro_agent.api.plugin import NekroPlugin, SandboxMethodType, ConfigBase

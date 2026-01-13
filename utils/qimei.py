@@ -8,7 +8,8 @@ from time import time
 from typing import TypedDict, cast
 
 import httpx
-import orjson as json
+from nekro_agent.api.plugin import dynamic_import_pkg
+json = dynamic_import_pkg("orjson")
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey

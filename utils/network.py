@@ -7,8 +7,10 @@ from collections import defaultdict
 from collections.abc import Callable, Coroutine
 from typing import Any, ClassVar, Generic, ParamSpec, TypeVar, cast
 
-import httpx
-import orjson as json
+from nekro_agent.api.plugin import dynamic_import_pkg
+
+httpx = dynamic_import_pkg("httpx")
+json = dynamic_import_pkg("orjson")
 from typing_extensions import TypedDict, override
 
 from ..exceptions import CredentialExpiredError, ResponseCodeError, SignInvalidError

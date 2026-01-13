@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import ClassVar
 from uuid import uuid4
 
-import orjson as json
+from nekro_agent.api.plugin import dynamic_import_pkg
+json = dynamic_import_pkg("orjson")
 
 device_path = Path(__file__).parent.parent / ".cache" / "device.json"
 

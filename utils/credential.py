@@ -5,7 +5,8 @@ from dataclasses import asdict, dataclass, field
 from time import time
 from typing import Any
 
-import orjson as json
+from nekro_agent.api.plugin import dynamic_import_pkg
+json = dynamic_import_pkg("orjson")
 
 if sys.version_info >= (3, 11):
     from typing import Self
