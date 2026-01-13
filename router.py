@@ -224,6 +224,52 @@ async def get_credential_info():
     
     return info
 
+@router.get("/remove", summary="删除本地凭证")
+async def remove_credential():
+    """删除本地凭证文件"""
+    try:
+        plugin_dir = plugin.get_plugin_path()
+        credential_file = plugin_dir / "qqmusic_cred.pkl"
+        
+        if not credential_file.exists():
+            message = "凭证文件不存在"
+            success = False
+        else:
+            credential_file.unlink()
+            logger.info("本地凭证已删除")
+            message = "凭证已删除"
+            success = True
+        
+        # 返回简洁的 HTML 页面
+        html = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>删除凭证</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, sans-serif; background: #1a1a1a; color: #e0e0e0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }}
+        .container {{ text-align: center; padding: 40px; }}
+        .icon {{ font-size: 4rem; margin-bottom: 20px; }}
+        .message {{ font-size: 1.5rem; margin-bottom: 30px; }}
+        a {{ color: #31c27c; text-decoration: none; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p class="message">{message}</p>
+        <a href="./">← 返回</a>
+    </div>
+</body>
+</html>"""
+        
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse(content=html)
+    except Exception as e:
+        logger.error(f"删除凭证失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"删除凭证失败: {str(e)}")
+
 class CredentialManager:
     """凭证管理器"""
 
