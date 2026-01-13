@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 from time import time
 from typing import TypedDict, cast
 
-# import httpx
-httpx = dynamic_import_pkg("httpx")
 from nekro_agent.api.plugin import dynamic_import_pkg
+
+httpx = dynamic_import_pkg("httpx")
 json = dynamic_import_pkg("orjson")
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
