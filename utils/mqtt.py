@@ -9,9 +9,15 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Any
 
-import httpx
-import orjson as json
-from httpx_ws import AsyncWebSocketSession, aconnect_ws
+from nekro_agent.api.plugin import dynamic_import_pkg
+
+httpx = dynamic_import_pkg("httpx")
+json = dynamic_import_pkg("orjson")
+httpx_ws = dynamic_import_pkg("httpx-ws", import_name="httpx_ws")
+AsyncWebSocketSession = httpx_ws.AsyncWebSocketSession
+aconnect_ws = httpx_ws.aconnect_ws
+
+
 
 logger = logging.getLogger("MQTTClient")
 

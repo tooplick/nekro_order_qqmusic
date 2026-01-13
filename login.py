@@ -11,7 +11,8 @@ from time import time
 from typing import Any
 from uuid import uuid4
 
-import httpx
+from nekro_agent.api.plugin import dynamic_import_pkg
+httpx = dynamic_import_pkg("httpx")
 
 from .exceptions.api_exception import CredentialExpiredError, LoginError, ResponseCodeError
 from .utils.common import hash33
