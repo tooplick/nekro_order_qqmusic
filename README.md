@@ -5,8 +5,7 @@
 ## 功能特点
 
 - 智能搜索 QQ 音乐歌曲
-- **支持外部API** 
-   - (默认: `https://api.ygking.top`)
+- 支持外部API: (默认: `https://api.ygking.top`)  
 - 可配置专辑封面尺寸
 - 可选FLAC,MP3_320,MP3_128音质
 - 提供Web界面用于生成和管理QQ音乐凭证
