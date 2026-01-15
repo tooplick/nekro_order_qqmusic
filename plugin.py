@@ -29,10 +29,16 @@ plugin = NekroPlugin(
 class QQMusicPluginConfig(ConfigBase):
     """QQ音乐插件配置项"""
 
+    use_external_api: bool = Field(
+        default=True,
+        title="使用外部API获取url",
+        description="开启后优先使用外部API，关闭则使用本地凭证。外部API失败时会回退到本地凭证",
+    )
+
     external_api_url: str = Field(
         default="https://api.ygking.top",
         title="外部API地址",
-        description="外部QQ音乐API地址，留空则使用本地凭证。凭证优先级: 外部API > 本地凭证",
+        description="外部QQ音乐API地址，需开启上方开关才生效",
     )
 
     cover_size: Literal["0", "150", "300", "500", "800"] = Field(
@@ -350,50 +356,48 @@ async def send_music(
     try:
         bot = get_bot()
 
-        # 凭证优先级: 外部API > 本地凭证
-        use_external_api = False
+        # 凭证优先级: 本地凭证 > 外部API（需开启开关）
+        use_external = False
         credential = None
         first_song = None
         music_url = None
 
-        # 1. 尝试外部API (优先)
-        if config.external_api_url:
-            print(f"尝试使用外部API: {config.external_api_url}")
+        # 1. 尝试本地凭证 (优先)
+        print("尝试使用本地凭证...")
+        credential = await load_and_refresh_credential()
+        
+        if credential and not isinstance(credential, str):
+            # 本地凭证有效，使用本地模式
+            print("本地凭证有效，使用本地模式")
+            result = await search_by_type(keyword=keyword, num=1)
+            if result:
+                first_song = result[0]
+                try:
+                    music_url = await get_song_url(first_song, credential, config.preferred_quality)
+                except Exception as e:
+                    print(f"本地获取歌曲URL失败: {e}")
+                    music_url = None
+        else:
+            print(f"本地凭证不可用: {credential}")
+        
+        # 2. 本地凭证失败时，如果开启了外部API，则回退到外部API
+        if (not first_song or not music_url) and config.use_external_api and config.external_api_url:
+            print(f"回退到外部API: {config.external_api_url}")
             
-            # 1.1 通过外部API搜索
+            # 2.1 通过外部API搜索
             result = await search_from_api(keyword, num=1)
             if result:
                 first_song = result[0]
                 mid = first_song.get("mid")
                 
-                # 1.2 通过外部API获取歌曲URL
+                # 2.2 通过外部API获取歌曲URL
                 if mid:
                     music_url = await get_song_url_from_api(mid, config.preferred_quality)
                     if music_url:
-                        use_external_api = True
-                        print("外部API获取成功，使用外部API模式")
+                        use_external = True
+                        print("外部API获取成功")
         
-        # 2. 外部API失败时回退到本地凭证
-        if not use_external_api:
-            print("使用本地凭证模式")
-            credential = await load_and_refresh_credential()
-            if isinstance(credential, str):  # 返回错误信息
-                return credential
-            if not credential:
-                if config.auto_refresh_credential:
-                    return f"QQ音乐凭证不存在或已过期且无法刷新，无法播放歌曲"
-                else:
-                    return f"QQ音乐凭证已过期，无法播放VIP歌曲"
-
-            # 2.1 本地搜索
-            result = await search_by_type(keyword=keyword, num=1)
-            if not result:
-                return f"未找到相关歌曲"
-            
-            first_song = result[0]
-            
-            # 2.2 获取音频流链接 (本地)
-            music_url = await get_song_url(first_song, credential, config.preferred_quality)
+        # 3. 检查结果
 
         if not first_song or not music_url:
             return f"无法获取歌曲信息或播放链接"
