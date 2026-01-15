@@ -177,20 +177,26 @@ async def check_credential_status(since_time: float = 0):
 @router.post("/credential/refresh", summary="刷新凭证")
 async def refresh_credential():
     """刷新凭证"""
+    # 先检查凭证文件是否存在
+    plugin_dir = plugin.get_plugin_path()
+    credential_file = plugin_dir / "qqmusic_cred.pkl"
+    
+    if not credential_file.exists():
+        raise HTTPException(status_code=400, detail="凭证文件不存在，请先登录")
+    
     manager = CredentialManager()
     try:
         if not manager.load_credential():
-            raise HTTPException(status_code=404, detail="未找到凭证文件")
+            raise HTTPException(status_code=400, detail="凭证加载失败，请重新登录")
             
         # 确保凭证已加载
         if manager.credential is None:
-            raise HTTPException(status_code=400, detail="凭证加载失败")
+            raise HTTPException(status_code=400, detail="凭证无效，请重新登录")
             
-        is_expired = await check_expired(manager.credential)
         can_refresh = await manager.credential.can_refresh()
         
         if not can_refresh:
-            raise HTTPException(status_code=400, detail="此凭证不支持刷新")
+            raise HTTPException(status_code=400, detail="此凭证不支持刷新，请重新登录")
             
         await manager.credential.refresh()
         if manager.save_credential():
