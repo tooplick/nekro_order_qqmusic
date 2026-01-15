@@ -128,15 +128,23 @@ async function refreshCredential() {
         showToast('正在刷新...', 'info');
         const response = await fetch(`${BASE_URL}/credential/refresh`, { method: 'POST' });
 
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || `HTTP ${response.status}`);
+        // 尝试解析响应体
+        let responseData = {};
+        try {
+            responseData = await response.json();
+        } catch (e) {
+            console.error('解析响应失败:', e);
         }
 
-        const data = await response.json();
-        showToast(data.message || '刷新成功', 'success');
+        if (!response.ok) {
+            // 优先使用服务器返回的 detail 信息
+            const errorMsg = responseData.detail || `请求失败 (${response.status})`;
+            throw new Error(errorMsg);
+        }
+
+        showToast(responseData.message || '刷新成功', 'success');
     } catch (error) {
-        showToast(`刷新失败: ${error.message}`, 'error');
+        showToast(error.message, 'error');
     }
 }
 
