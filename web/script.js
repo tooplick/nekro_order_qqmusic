@@ -137,8 +137,8 @@ async function refreshCredential() {
         }
 
         if (!response.ok) {
-            // 优先使用服务器返回的 detail 信息
-            const errorMsg = responseData.detail || `请求失败 (${response.status})`;
+            // 优先使用服务器返回的 message 或 detail 信息
+            const errorMsg = responseData.message || responseData.detail || `请求失败 (${response.status})`;
             throw new Error(errorMsg);
         }
 

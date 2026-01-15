@@ -182,7 +182,7 @@ async def refresh_credential():
     credential_file = plugin_dir / "qqmusic_cred.pkl"
     
     if not credential_file.exists():
-        raise HTTPException(status_code=400, detail="凭证文件不存在，请先登录")
+        raise HTTPException(status_code=400, detail="凭证文件不存在")
     
     manager = CredentialManager()
     try:
