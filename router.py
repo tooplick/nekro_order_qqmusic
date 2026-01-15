@@ -215,18 +215,9 @@ async def get_credential_info():
     if not manager.load_credential() or manager.credential is None:
         raise HTTPException(status_code=404, detail="未找到凭证文件")
     
-    # 返回凭证的基本信息，隐藏敏感信息
+    # 返回凭证的完整信息
     cred_dict = manager.credential.__dict__
-    info = {}
-    for key, value in cred_dict.items():
-        if key.lower() in ['token', 'refresh_token', 'cookie']:
-            # 敏感信息，只显示部分
-            if value and len(str(value)) > 10:
-                info[key] = f"{str(value)[:10]}..."
-            else:
-                info[key] = str(value)
-        else:
-            info[key] = str(value)
+    info = {key: str(value) for key, value in cred_dict.items()}
     
     return info
 
