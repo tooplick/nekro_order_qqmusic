@@ -1,9 +1,8 @@
 import pickle
 from pathlib import Path
 from nekro_agent.api.plugin import dynamic_import_pkg
-
-aiofiles = dynamic_import_pkg("aiofiles")
-httpx = dynamic_import_pkg("httpx") 
+import httpx
+import aiofiles
 import json
 
 from nekro_agent.api.plugin import NekroPlugin, SandboxMethodType, ConfigBase
@@ -124,7 +123,7 @@ async def load_and_refresh_credential() -> Credential | None:
 
         if not credential_file.exists():
             print("QQ音乐凭证文件不存在")
-            return f"QQ音乐凭证文件不存在"
+            return f"凭证文件不存在"
 
         async with aiofiles.open(credential_file, "rb") as f:
             credential_content = await f.read()

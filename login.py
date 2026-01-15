@@ -12,7 +12,7 @@ from typing import Any
 from uuid import uuid4
 
 from nekro_agent.api.plugin import dynamic_import_pkg
-httpx = dynamic_import_pkg("httpx")
+import httpx
 
 from .exceptions.api_exception import CredentialExpiredError, LoginError, ResponseCodeError
 from .utils.common import hash33

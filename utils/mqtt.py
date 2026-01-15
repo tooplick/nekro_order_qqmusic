@@ -9,14 +9,19 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Any
 
+import httpx
 from nekro_agent.api.plugin import dynamic_import_pkg
 
-httpx = dynamic_import_pkg("httpx")
-json = dynamic_import_pkg("orjson")
-httpx_ws = dynamic_import_pkg("httpx-ws", import_name="httpx_ws")
-AsyncWebSocketSession = httpx_ws.AsyncWebSocketSession
-aconnect_ws = httpx_ws.aconnect_ws
 
+# 延迟导入辅助函数（仅用于 NA 环境未内置的包）
+def _get_orjson():
+    """延迟获取 orjson 模块"""
+    return dynamic_import_pkg("orjson")
+
+
+def _get_httpx_ws():
+    """延迟获取 httpx_ws 模块"""
+    return dynamic_import_pkg("httpx-ws", import_name="httpx_ws")
 
 
 logger = logging.getLogger("MQTTClient")
@@ -65,9 +70,10 @@ class MqttMessage:
     @property
     def json(self) -> Any | None:
         """尝试将 payload 解析为 JSON 对象."""
+        orjson = _get_orjson()
         try:
-            return json.loads(self.payload)
-        except json.JSONDecodeError:
+            return orjson.loads(self.payload)
+        except orjson.JSONDecodeError:
             return None
 
 
@@ -199,9 +205,9 @@ class Client:
         self.port = port
         self.path = path
         self.keep_alive = keep_alive
-        self._ws: AsyncWebSocketSession | None = None
+        self._ws: Any = None  # AsyncWebSocketSession
         self._ws_ctx: Any | None = None
-        self._http_client: httpx.AsyncClient | None = None
+        self._http_client: Any = None  # httpx.AsyncClient
 
     async def __aenter__(self) -> "Client":
         return self
@@ -211,7 +217,7 @@ class Client:
     ) -> None:
         await self.disconnect()
 
-    async def _get_http_client(self) -> httpx.AsyncClient:
+    async def _get_http_client(self):
         """获取 HTTP 客户端."""
         if self._http_client is None or self._http_client.is_closed:
             self._http_client = httpx.AsyncClient(timeout=30.0)
@@ -226,7 +232,8 @@ class Client:
         logger.info(f"Connecting to {url}...")
 
         client = await self._get_http_client()
-
+        httpx_ws = _get_httpx_ws()
+        aconnect_ws = httpx_ws.aconnect_ws
         self._ws_ctx = aconnect_ws(url, subprotocols=["mqtt"], headers=headers, client=client)
         ws = await self._ws_ctx.__aenter__()
         self._ws = ws

@@ -4,9 +4,6 @@ import logging
 import os
 import sys
 
-# QQMusic API 初始化逻辑
-from . import login, search, song
-
 logger = logging.getLogger("qqmusicapi")
 
 # Change to the "Selector" event loop if platform is Windows
@@ -14,7 +11,7 @@ if sys.platform.lower() == "win32" or os.name.lower() == "nt":
     from asyncio import WindowsSelectorEventLoopPolicy, set_event_loop_policy
     set_event_loop_policy(WindowsSelectorEventLoopPolicy())
 
-__all__ = ["plugin", "login", "search", "song"]
+__all__ = ["plugin"]
 
 @plugin.mount_router()
 def create_router() -> APIRouter:
