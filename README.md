@@ -9,15 +9,27 @@
 - 可配置专辑封面尺寸
 - 可选FLAC,MP3_320,MP3_128音质
 - 提供Web界面用于生成和管理QQ音乐凭证
+- 卡片链接可跳转外部播放器（优化QQ桌面端体验）
 
 ## 使用模式
 
 ### 外部API模式 (推荐)
-配置 `external_api_url` 后，插件将优先使用外部API进行搜索和获取歌曲URL，无需本地凭证。
+配置 `external_api_url` 后，插件使用外部API进行搜索和获取歌曲URL，无需本地凭证。
 
 ### 本地凭证模式：
-[点此登录！！](../plugins/GeQian.order_qqmusic)  
-将 `external_api_url` 留空，或外部API不可用时自动回退到本地凭证。
+[点此登录](../plugins/GeQian.order_qqmusic)  
+
+## 配置项
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `use_external_api` | `true` | 使用外部API获取URL |
+| `external_api_url` | `https://api.ygking.top` | 外部API地址 |
+| `cover_size` | `500` | 封面尺寸 (0/150/300/500/800) |
+| `preferred_quality` | `FLAC` | 优先音质 (FLAC/MP3_320/MP3_128) |
+| `enable_json_card` | `true` | 启用音乐卡片 |
+| `use_external_player` | `false` | 卡片链接使用外部播放器 |
+| `external_player_url` | `player.ygking.top` | 外部播放器地址 |
 
 ## 凭证生成 (本地模式)
 
@@ -50,10 +62,10 @@
 
 ## 版本历史
 
-- v2.2.0: 新增外部API支持
+- v2.2.0: 新增外部API和外部播放器支持
   - 支持通过外部API搜索和获取歌曲URL
-  - 凭证优先级: 外部API > 本地凭证
-  - 新增删除凭证接口
+  - 新增外部播放器配置，优化QQ桌面端体验
+  - 新增删除凭证接口`/remove`
 - v2.1.1: 优化和添加功能
   - 迁移API库至本地
   - 新增支持手机客户端登录

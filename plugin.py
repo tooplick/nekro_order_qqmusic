@@ -1,5 +1,6 @@
 import pickle
 from pathlib import Path
+from urllib.parse import quote
 from nekro_agent.api.plugin import dynamic_import_pkg
 import httpx
 import aiofiles
@@ -20,7 +21,7 @@ plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.1.1",
+    version="2.2.0",
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
@@ -63,6 +64,18 @@ class QQMusicPluginConfig(ConfigBase):
         default=True,
         title="启用JSON卡片",
         description="使用QQ音乐JSON卡片发送歌曲信息（需API支持）",
+    )
+
+    use_external_player: bool = Field(
+        default=False,
+        title="卡片链接使用外部播放器",
+        description="开启后，音乐卡片的主链接将跳转到外部播放器而非QQ音乐官网",
+    )
+
+    external_player_url: str = Field(
+        default="player.ygking.top",
+        title="外部播放器地址",
+        description="外部播放器的域名地址",
     )
 
 config: QQMusicPluginConfig = plugin.get_config(QQMusicPluginConfig)
@@ -286,11 +299,13 @@ async def get_signed_ark_card(song_info: dict, real_cover_url: str, real_music_u
         mid = song_info['mid']
         title = song_info['title']
         singer = song_info['singer'][0]['name']
-        web_jump_url = f"https://y.qq.com/n/ryqq/songDetail/{mid}"
+        
+        # 根据配置生成跳转 URL
+        jump_url = build_jump_url(mid, title, singer, real_cover_url, real_music_url)
         
         data = {
             "url": real_music_url,
-            "jump": web_jump_url,
+            "jump": jump_url,
             "song": title,
             "singer": singer,
             "cover": real_cover_url if real_cover_url else "",
@@ -312,6 +327,74 @@ async def get_signed_ark_card(song_info: dict, real_cover_url: str, real_music_u
     except Exception as e:
         print(f"获取Ark卡片出错: {e}")
     return None
+
+
+def clean_text(text: str) -> str:
+    """清理文本中的无效 Unicode 字符（如私用区字符、代理对、控制字符等）"""
+    if not text:
+        return text
+    
+    cleaned = []
+    for char in text:
+        code = ord(char)
+        # 移除私用区字符
+        if (0xE000 <= code <= 0xF8FF or 
+            0xF0000 <= code <= 0xFFFFD or
+            0x100000 <= code <= 0x10FFFD):
+            continue
+        # 移除代理对字符
+        if 0xD800 <= code <= 0xDFFF:
+            continue
+        # 移除控制字符
+        if code <= 0x1F or code == 0x7F:
+            continue
+        cleaned.append(char)
+    return ''.join(cleaned)
+
+
+def build_jump_url(
+    song_mid: str,
+    song_name: str,
+    artist: str,
+    cover_url: str,
+    music_url: str
+) -> str:
+    """根据配置生成跳转 URL"""
+    if config.use_external_player:
+        # 使用外部播放器
+        base_url = config.external_player_url.rstrip("/")
+        if not base_url or len(base_url) > 200 or any(ord(c) > 127 for c in base_url):
+            print(f"检测到异常的外部播放器 URL 配置: {base_url}，已回退到默认")
+            base_url = "player.ygking.top"
+
+        if not base_url.startswith("http"):
+            base_url = f"https://{base_url}"
+        
+        # 清理无效字符并构建 URL 参数
+        clean_title = clean_text(str(song_name))
+        clean_artist = clean_text(str(artist))
+        
+        try:
+            quoted_title = quote(quote(clean_title, encoding='utf-8', safe=''), safe='')
+            quoted_artist = quote(quote(clean_artist, encoding='utf-8', safe=''), safe='')
+            quoted_cover = quote(str(cover_url), encoding='utf-8', safe='')
+            quoted_audio = quote(str(music_url), encoding='utf-8', safe='')
+            quoted_detail = quote(f'https://y.qq.com/n/ryqq/songDetail/{song_mid}', encoding='utf-8', safe='')
+        except Exception as e:
+            print(f"URL 参数编码失败: {e}")
+            return f"https://y.qq.com/n/ryqq/songDetail/{song_mid}"
+
+        params = [
+            f"title={quoted_title}",
+            f"artist={quoted_artist}",
+            f"cover={quoted_cover}",
+            f"audio={quoted_audio}",
+            f"detail={quoted_detail}"
+        ]
+        return f"{base_url}/?{'&'.join(params)}"
+    else:
+        # 使用QQ音乐官网
+        return f"https://y.qq.com/n/ryqq/songDetail/{song_mid}"
 
 def parse_chat_key(chat_key: str) -> tuple[str, int]:
     if "_" not in chat_key:
