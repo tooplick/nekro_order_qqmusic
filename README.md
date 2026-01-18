@@ -19,18 +19,6 @@
 ### 本地凭证模式：
 [点此登录](../plugins/GeQian.order_qqmusic)  
 
-## 配置项
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `use_external_api` | `true` | 使用外部API获取URL |
-| `external_api_url` | `https://api.ygking.top` | 外部API地址 |
-| `cover_size` | `500` | 封面尺寸 (0/150/300/500/800) |
-| `preferred_quality` | `FLAC` | 优先音质 (FLAC/MP3_320/MP3_128) |
-| `enable_json_card` | `true` | 启用音乐卡片 |
-| `use_external_player` | `false` | 卡片链接使用外部播放器 |
-| `external_player_url` | `player.ygking.top` | 外部播放器地址 |
-
 ## 凭证生成 (本地模式)
 
 ### 使用Web界面
