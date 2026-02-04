@@ -7,10 +7,9 @@ from collections import defaultdict
 from collections.abc import Callable, Coroutine
 from typing import Any, ClassVar, Generic, ParamSpec, TypeVar, cast
 
-import httpx
-from nekro_agent.api.plugin import dynamic_import_pkg
+import json
 
-orjson = dynamic_import_pkg("orjson")
+import httpx
 from typing_extensions import TypedDict, override
 
 from ..exceptions import CredentialExpiredError, ResponseCodeError, SignInvalidError
@@ -264,8 +263,8 @@ class ApiRequest(BaseRequest, Generic[_P, _R]):
         if not resp.content:
             return {}
         try:
-            data = orjson.loads(resp.content)
-        except orjson.JSONDecodeError:
+            data = json.loads(resp.content)
+        except json.JSONDecodeError:
             return {"data": resp.text}
         req_data = data.get(f"{self.module}.{self.method}", {})
         if self.ignore_code:
@@ -380,7 +379,7 @@ class RequestGroup(BaseRequest):
             if not resp.content:
                 return []
 
-            res_data = orjson.loads(resp.content)
+            res_data = json.loads(resp.content)
 
             for req_item in self._requests:
                 req = req_item["request"]
@@ -391,7 +390,7 @@ class RequestGroup(BaseRequest):
                 else:
                     data = req_data.get("data", req_data)
                 self._results[req_item["id"]] = data
-        except orjson.JSONDecodeError:
+        except json.JSONDecodeError:
             self._results = [{"data": resp.text}]
 
     async def _prepare_request(self):

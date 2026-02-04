@@ -1,13 +1,10 @@
 """凭据类,用于请求验证"""
 
+import json
 import sys
 from dataclasses import asdict, dataclass, field
 from time import time
 from typing import Any
-
-from nekro_agent.api.plugin import dynamic_import_pkg
-
-orjson = dynamic_import_pkg("orjson")
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -110,7 +107,7 @@ class Credential:
         """获取凭据 JSON 字符串"""
         data = self.as_dict()
         data.update(data.pop("extra_fields"))
-        return orjson.dumps(data).decode()
+        return json.dumps(data)
 
     @classmethod
     def from_cookies_dict(cls, cookies: dict[str, Any]) -> Self:
@@ -136,4 +133,4 @@ class Credential:
     @classmethod
     def from_cookies_str(cls, cookies: str) -> Self:
         """从 cookies 字符串创建 Credential 实例"""
-        return cls.from_cookies_dict(orjson.loads(cookies))
+        return cls.from_cookies_dict(json.loads(cookies))
