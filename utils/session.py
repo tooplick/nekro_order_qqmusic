@@ -4,8 +4,7 @@ import contextvars
 import logging
 from typing import TypedDict
 
-from nekro_agent.api.plugin import dynamic_import_pkg
-httpx = dynamic_import_pkg("httpx")
+import httpx
 
 from .credential import Credential
 from .qimei import get_qimei

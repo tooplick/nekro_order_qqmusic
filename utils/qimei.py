@@ -7,10 +7,10 @@ from datetime import datetime, timedelta
 from time import time
 from typing import TypedDict, cast
 
+import httpx
 from nekro_agent.api.plugin import dynamic_import_pkg
 
-httpx = dynamic_import_pkg("httpx")
-json = dynamic_import_pkg("orjson")
+orjson = dynamic_import_pkg("orjson")
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
@@ -114,7 +114,7 @@ def random_payload_by_device(device: Device, version: str) -> dict:
         "packageId": "com.tencent.qqmusic",
         "deviceType": "Phone",
         "sdkName": "",
-        "reserved": json.dumps(reserved).decode(),
+        "reserved": orjson.dumps(reserved).decode(),
     }
 
 
@@ -127,7 +127,7 @@ def get_qimei(version: str) -> QimeiResult:
         nonce = "".join(random.choices("adbcdef1234567890", k=16))
         ts = int(time())
         key = base64.b64encode(rsa_encrypt(crypt_key.encode())).decode()
-        params = base64.b64encode(aes_encrypt(crypt_key.encode(), json.dumps(payload))).decode()
+        params = base64.b64encode(aes_encrypt(crypt_key.encode(), orjson.dumps(payload))).decode()
         extra = '{"appKey":"' + APP_KEY + '"}'
         sign = calc_md5(key, params, str(ts * 1000), nonce, SECRET, extra)
         res = httpx.post(
@@ -156,7 +156,7 @@ def get_qimei(version: str) -> QimeiResult:
             timeout=5,
         )
         logger.debug("获取 QIMEI 成功: %s", res.json())
-        data = json.loads(json.loads(res.content)["data"])["data"]
+        data = orjson.loads(orjson.loads(res.content)["data"])["data"]
         device.qimei = data["q36"]
         save_device(device)
         return QimeiResult(q16=data["q16"], q36=data["q36"])

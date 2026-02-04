@@ -10,7 +10,8 @@ from typing import ClassVar
 from uuid import uuid4
 
 from nekro_agent.api.plugin import dynamic_import_pkg
-json = dynamic_import_pkg("orjson")
+
+orjson = dynamic_import_pkg("orjson")
 
 device_path = Path(__file__).parent.parent / ".cache" / "device.json"
 
@@ -91,7 +92,7 @@ def get_cached_device() -> Device:
         device = Device()
         save_device(device)
         return device
-    device_data = json.loads(device_path.read_text())
+    device_data = orjson.loads(device_path.read_text())
     device_data["version"] = OSVersion(**device_data["version"])
     return Device(**device_data)
 
@@ -99,4 +100,4 @@ def get_cached_device() -> Device:
 def save_device(device: Device):
     """缓存 Device"""
     device_path.parent.mkdir(parents=True, exist_ok=True)
-    device_path.write_text(json.dumps(asdict(device)).decode())
+    device_path.write_text(orjson.dumps(asdict(device)).decode())
