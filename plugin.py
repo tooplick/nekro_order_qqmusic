@@ -20,7 +20,7 @@ plugin = NekroPlugin(
     name="QQ音乐点歌",
     module_name="order_qqmusic",
     description="给予AI助手通过QQ音乐搜索并发送音乐消息的能力",
-    version="2.2.0",
+    version="2.3.0",
     author="GeQian",
     url="https://github.com/tooplick/nekro_order_qqmusic",
 )
@@ -47,10 +47,10 @@ class QQMusicPluginConfig(ConfigBase):
         description="选择发送（文字+封面+语音消息）时的封面尺寸，0表示不发送。",
     )
     
-    preferred_quality: Literal["FLAC", "MP3_320", "MP3_128"] = Field(
+    preferred_quality: Literal["MASTER", "ATMOS_2", "ATMOS_51", "FLAC", "MP3_320", "MP3_128"] = Field(
         default="FLAC",
         title="优先音质",
-        description="选择歌曲播放的优先音质，如果无法获取将自动降级",
+        description="选择歌曲播放的优先音质，如果无法获取将自动降级。MASTER=臻品母带(24Bit 192kHz), ATMOS_2=臻品全景声, ATMOS_51=臻品音质",
     )
     
     auto_refresh_credential: bool = Field(
@@ -111,7 +111,14 @@ async def get_song_url_from_api(mid: str, quality: str = "128") -> str | None:
     
     try:
         api_url = config.external_api_url.rstrip('/')
-        quality_map = {"FLAC": "flac", "MP3_320": "320", "MP3_128": "128"}
+        quality_map = {
+            "MASTER": "master",
+            "ATMOS_2": "atmos",
+            "ATMOS_51": "atmos_51",
+            "FLAC": "flac",
+            "MP3_320": "320",
+            "MP3_128": "128",
+        }
         q = quality_map.get(quality, "128")
         
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -182,17 +189,23 @@ async def load_and_refresh_credential() -> Credential | None:
 def get_quality_priority(preferred_quality: str) -> list[SongFileType]:
     """根据优先音质返回音质优先级列表"""
     quality_map = {
+        "MASTER": [SongFileType.MASTER, SongFileType.ATMOS_2, SongFileType.ATMOS_51, SongFileType.FLAC, SongFileType.MP3_320, SongFileType.MP3_128],
+        "ATMOS_2": [SongFileType.ATMOS_2, SongFileType.ATMOS_51, SongFileType.FLAC, SongFileType.MP3_320, SongFileType.MP3_128],
+        "ATMOS_51": [SongFileType.ATMOS_51, SongFileType.FLAC, SongFileType.MP3_320, SongFileType.MP3_128],
         "FLAC": [SongFileType.FLAC, SongFileType.MP3_320, SongFileType.MP3_128],
         "MP3_320": [SongFileType.MP3_320, SongFileType.MP3_128],
         "MP3_128": [SongFileType.MP3_128]
     }
-    return quality_map.get(preferred_quality, [SongFileType.MP3_320, SongFileType.MP3_128])
+    return quality_map.get(preferred_quality, [SongFileType.FLAC, SongFileType.MP3_320, SongFileType.MP3_128])
 
 async def get_song_url(song_info: dict, credential: Credential, preferred_quality: str) -> str:
     """根据优先音质获取歌曲下载链接，失败时自动降级"""
     mid = song_info['mid']
     quality_priority = get_quality_priority(preferred_quality)
     quality_names = {
+        SongFileType.MASTER: "臻品母带",
+        SongFileType.ATMOS_2: "臻品全景声",
+        SongFileType.ATMOS_51: "臻品音质",
         SongFileType.FLAC: "FLAC无损",
         SongFileType.MP3_320: "MP3高品质",
         SongFileType.MP3_128: "MP3标准"
